@@ -1,0 +1,18 @@
+syntax="proto3";
+option java_generic_services = true;
+option java_multiple_files = true;
+option java_package = "org.comp7705.protocol.definition";
+option java_generate_equals_and_hash = true;
+option java_string_check_utf8 = true;
+
+message DNRegisterRequest {
+  repeated string ChunkIds = 1;
+  int64 FullCapacity = 2;
+  int64 UsedCapacity = 3;
+}
+
+message DNRegisterResponse {
+  string Id = 1;
+  uint32 PendingCount = 2;
+}
+

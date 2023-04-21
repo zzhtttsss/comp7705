@@ -1,0 +1,90 @@
+syntax="proto3";
+option java_generic_services = true;
+option java_multiple_files = true;
+option java_package = "org.comp7705.protocol.service";
+option java_generate_equals_and_hash = true;
+option java_string_check_utf8 = true;
+import "definition.proto";
+import "add.proto";
+import "get.proto";
+import "stat.proto";
+import "mkdir.proto";
+import "move.proto";
+import "list.proto";
+import "remove.proto";
+import "rename.proto";
+import "register.proto";
+import "join_cluster.proto";
+import "heartbeat.proto";
+
+
+service MasterService {
+
+  // JoinCluster Called by master.
+  // Join a master to the master cluster.
+  rpc JoinCluster(JoinClusterRequest) returns(JoinClusterResponse);
+
+  rpc Register(DNRegisterRequest) returns(DNRegisterResponse);
+
+  rpc Heartbeat(HeartbeatRequest) returns(HeartbeatResponse);
+
+  // CheckArgs4Add Called by client.
+  // Check whether the path and file name entered by the user in the Add operation are legal.
+  rpc CheckArgs4Add(CheckArgs4AddRequest) returns(CheckArgs4AddResponse);
+
+  // GetDataNodes4Add Called by client.
+  // Allocate some DataNode to store a Chunk and select the primary DataNode
+  rpc GetDataNodes4Add(GetDataNodes4AddRequest) returns(GetDataNodes4AddResponse);
+
+  // Callback4Add Called by client. Return result of add operation.
+  rpc Callback4Add(Callback4AddRequest) returns(Callback4AddResponse);
+
+  // CheckAndGet Called by client.
+  // Check whether the path and file name entered by the user in the Add operation are legal.
+  rpc CheckArgs4Get(CheckArgs4GetRequest) returns(CheckArgs4GetResponse);
+
+  // GetDataNodes4Get Called by client.
+  // Allocate some DataNode to store a Chunk and select the primary DataNode
+  rpc GetDataNodes4Get(GetDataNodes4GetRequest) returns(GetDataNodes4GetResponse);
+
+  // ReleaseLease4Add Called by client.
+  // Release the lease of a chunk.
+  rpc ReleaseLease4Get(ReleaseLease4GetRequest) returns(ReleaseLease4GetResponse);
+
+  // CheckAndList Called by client.
+  // Check args and list all directories or files under target path.
+  rpc List(ListRequest) returns(ListResponse);
+
+  // CheckAndMkdir Called by client.
+  // Check args and make directory at target path.
+  rpc Mkdir(MkDirRequest) returns(MkDirResponse);
+
+  // CheckAndMove Called by client.
+  // Check args and move directory or file to target path.
+  rpc Move(MoveRequest) returns(MoveResponse);
+
+  // CheckAndStat Called by client.
+  // Check args and get the file info.
+  rpc Stat(StatRequest) returns(StatResponse);
+
+  // CheckAndRemove Called by client.
+  // Check args and remove directory or file at target path.
+  rpc Remove(RemoveRequest) returns(RemoveResponse);
+
+  // CheckAndRename Called by client.
+  // Check args and rename the file which is in the path to newName.
+  rpc Rename(RenameRequest) returns(RenameResponse);
+
+}
+
+service ChunkserverService {
+  // TransferFile Called by client or chunkserver.
+  // Transfer a chunk of the file to a chunkserver using stream and let that chunkserver transfer
+  // this chunk to another chunkserver if needed.
+  rpc TransferChunk(stream PieceOfChunk) returns(TransferChunkResponse);
+
+  // SetupStream2DataNode Called by client.
+  // Set up the stream between client and chunkserver, then chunkserver returns data
+  rpc SetupStream2DataNode(SetupStream2DataNodeRequest) returns(stream Piece);
+}
+

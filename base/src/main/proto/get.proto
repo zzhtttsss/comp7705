@@ -1,0 +1,71 @@
+syntax="proto3";
+
+option java_generic_services = true;
+option java_multiple_files = true;
+option java_package = "org.comp7705.protocol.definition";
+option java_generate_equals_and_hash = true;
+option java_string_check_utf8 = true;
+
+// CheckAndGetArgs
+// path: target path to get
+message CheckArgs4GetRequest {
+  string path = 1;
+}
+
+// CheckAndGetReply
+// fileNodeId: file id stored in the directory tree
+// chunkNum: the number of chunks the file will be cut into
+// operationId: the get operation id stored in the edits
+message CheckArgs4GetResponse {
+  string fileNodeId = 1;
+  int32 chunkNum = 2;
+  string operationId = 3;
+  int64 fileSize=4;
+}
+
+// GetDataNodes4GetArgs
+// fileNodeId: file id stored in the directory tree
+// chunkIndex: the index of chunk
+message GetDataNodes4GetRequest {
+  string fileNodeId = 1;
+  int32 chunkIndex = 2;
+}
+
+// GetDataNodes4GetReply
+// primaryNodeId: id of the primary DataNode
+// primaryNodeAddr: address of the primary DataNode
+// chunkIndex: index of current chunk index of the file
+// chunkSize: the size of current chunk
+message GetDataNodes4GetResponse {
+  repeated string dataNodeIds = 1;
+  repeated string dataNodeAddrs = 2;
+  int32 chunkIndex = 3;
+}
+
+// SetupStream2DataNodeArgs sets up the stream with the datanode and then transfer data
+// clientAddr: address of the client
+// chunkId: fileNodeId+chunkIndex which represents a chunk
+// dataNodeId: id of dataNode
+message SetupStream2DataNodeRequest {
+  string clientPort = 1;
+  string chunkId = 2;
+  string dataNodeId = 3;
+}
+
+message SetupStream2DataNodeReply {
+
+}
+
+// ReleaseLease4GetArgs
+// chunkId: id of chunk which has been stored by chunkserver and need to release its lease
+message ReleaseLease4GetRequest {
+  string chunkId = 1;
+}
+
+message ReleaseLease4GetResponse {
+}
+
+//The same as "PieceOfChunk". Waiting to refine.
+message Piece {
+  bytes piece=1;
+}

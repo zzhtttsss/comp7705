@@ -1,0 +1,75 @@
+syntax="proto3";
+option java_generic_services = true;
+option java_multiple_files = true;
+option java_package = "org.comp7705.protocol.definition";
+option java_generate_equals_and_hash = true;
+option java_string_check_utf8 = true;
+
+// CheckArgs4AddArgs
+// path: target path to add file
+// fileName: name of the file to be added
+// size: size of the file. Use bytes as the unit of measurement which means 1kb will be 1024.
+message CheckArgs4AddRequest {
+  string path = 1;
+  string fileName = 2;
+  int64 size = 3;
+}
+
+// CheckArgs4AddReply
+// fileNodeId: file id stored in the directory tree
+// chunkNum: the number of chunks the file will be cut into
+message CheckArgs4AddResponse {
+  string fileNodeId = 1;
+  int32 chunkNum = 2;
+}
+
+// GetDataNodes4AddArgs
+// fileNodeId: file id stored in the directory tree
+// chunkIndex: the index of chunk
+message GetDataNodes4AddRequest {
+  string fileNodeId = 1;
+  int32 chunkNum = 2;
+}
+
+// GetDataNodes4AddReply
+// dataNodes: ids of all DataNodes that will store this chunk
+message GetDataNodes4AddResponse {
+  message Array{
+    repeated string items = 1;
+  }
+  repeated Array dataNodeIds = 1;
+  repeated Array dataNodeAdds = 2;
+}
+
+
+// Callback4AddArgs
+// chunkId: id of chunk which has been stored by chunkserver and need to release its lease
+message Callback4AddRequest {
+  string fileNodeId = 1;
+  string filePath = 2;
+  repeated ChunkInfo4Add infos = 3;
+  repeated string failChunkIds = 4;
+}
+
+message Callback4AddResponse {
+
+}
+
+message ChunkInfo4Add {
+  string chunkId = 1;
+  repeated string successNode = 2;
+  repeated string failNode = 3;
+}
+
+// TransferChunkArgs
+// piece: a chunk will be split into pieces to send using stream
+message PieceOfChunk {
+  bytes piece = 1;
+}
+
+// TransferChunkReply
+message TransferChunkResponse {
+  string chunkId = 1;
+  repeated string failAdds = 2;
+}
+

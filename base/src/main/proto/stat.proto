@@ -1,0 +1,19 @@
+syntax="proto3";
+option java_generic_services = true;
+option java_multiple_files = true;
+option java_package = "org.comp7705.protocol.definition";
+option java_generate_equals_and_hash = true;
+option java_string_check_utf8 = true;
+
+// CheckAndStatArgs
+// path: file path
+message StatRequest {
+  string path = 1;
+  bool isLatest = 2;
+}
+
+message StatResponse {
+  string fileName = 1;
+  bool isFile = 2;
+  int64 size = 3;
+}

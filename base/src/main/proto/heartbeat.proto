@@ -1,0 +1,29 @@
+syntax="proto3";
+option java_generic_services = true;
+option java_multiple_files = true;
+option java_package = "org.comp7705.protocol.definition";
+option java_generate_equals_and_hash = true;
+option java_string_check_utf8 = true;
+
+message HeartbeatRequest {
+  string Id = 1;
+  repeated string ChunkId = 2;
+  int64 IOLoad = 3;
+  int64 FullCapacity = 4;
+  int64 UsedCapacity = 5;
+  repeated ChunkInfo SuccessChunkInfos = 6;
+  repeated ChunkInfo FailChunkInfos = 7;
+  repeated string InvalidChunks = 8;
+  bool IsReady = 9;
+}
+
+message HeartbeatResponse {
+  repeated ChunkInfo ChunkInfos = 1;
+  repeated string DataNodeAddress = 2;
+}
+
+message ChunkInfo{
+  string ChunkId = 1;
+  string DataNodeId = 2;
+  int32 SendType = 3;
+}

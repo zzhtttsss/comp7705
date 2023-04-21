@@ -1,0 +1,18 @@
+syntax="proto3";
+option java_generic_services = true;
+option java_multiple_files = true;
+option java_package = "org.comp7705.protocol.definition";
+option java_generate_equals_and_hash = true;
+option java_string_check_utf8 = true;
+
+// CheckAndRenameArgs
+// path: the file to be renamed
+// newName: the file's new name
+message RenameRequest {
+  string path = 1;
+  string newName=2;
+}
+
+message RenameResponse {
+
+}
