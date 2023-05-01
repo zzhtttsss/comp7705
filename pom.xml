@@ -18,6 +18,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <lombok.version>1.18.24</lombok.version>
+    <logback.version>1.4.5</logback.version>
   </properties>
 
   <dependencies>
@@ -27,6 +29,21 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>${lombok.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-services</artifactId>
+      <version>1.51.0</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 </project>
