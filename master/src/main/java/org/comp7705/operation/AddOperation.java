@@ -5,15 +5,20 @@ import org.comp7705.Master;
 import org.comp7705.common.AddStage;
 import org.comp7705.common.FileType;
 import org.comp7705.entity.ChunkTaskResult;
+import org.comp7705.metadata.Chunk;
 import org.comp7705.metadata.DataNode;
 import org.comp7705.metadata.FileNode;
 import org.comp7705.protocol.definition.CheckArgs4AddResponse;
 import org.comp7705.protocol.definition.GetDataNodes4AddResponse;
+import org.comp7705.util.StringUtil;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.comp7705.Master.MASTER;
+import static org.comp7705.constant.Common.CHUNK_ID_DELIMITER;
 
 @Data
 public class AddOperation implements Operation {
@@ -28,11 +33,11 @@ public class AddOperation implements Operation {
     private int chunkNum;
     private String chunkId;
     private List<ChunkTaskResult> infos;
-    private String failChunkIds;
+    private List<String> failChunkIds;
     private AddStage stage;
 
     public AddOperation(String id, String path, String fileName, long size, String fileNodeId, int chunkNum,
-                        String chunkId, List<ChunkTaskResult> infos, String failChunkIds, AddStage stage) {
+                        String chunkId, List<ChunkTaskResult> infos, List<String> failChunkIds, AddStage stage) {
         this.id = id;
         this.path = path;
         this.fileName = fileName;
@@ -61,10 +66,33 @@ public class AddOperation implements Operation {
             case GET_DATA_NODES:
                 ArrayList<ArrayList<DataNode>> allocateResult =
                         master.getDataNodeManager().batchAllocateDataNodes(this.chunkNum);
-
-
-//                return GetDataNodes4AddResponse.newBuilder().setDataNodeIds(GetDataNodes4AddResponse.Array.newBuilder().addAllItems());
-            case UNLOCK_DIR:
+                List<GetDataNodes4AddResponse.Array> idArrays = new ArrayList<>();
+                List<GetDataNodes4AddResponse.Array> addArrays = new ArrayList<>();
+                List<Chunk> chunks = new ArrayList<>();
+                for (int i = 0; i < chunkNum; i++) {
+                    chunkId = StringUtil.concatString(fileNodeId, CHUNK_ID_DELIMITER, String.valueOf(i));
+                    Set<String> dataNodeIdSet = new HashSet<>();
+                    List<String> dataNodeIds = new ArrayList<>();
+                    List<String> dataNodeAdds = new ArrayList<>();
+                    for (DataNode dataNode : allocateResult.get(i)) {
+                        dataNodeIdSet.add(dataNode.getId());
+                        dataNodeIds.add(dataNode.getId());
+                        dataNodeAdds.add(dataNode.getAddress());
+                    }
+                    Chunk chunk = new Chunk(chunkId, dataNodeIdSet);
+                    chunks.add(chunk);
+                    idArrays.add(GetDataNodes4AddResponse.Array.newBuilder().addAllItems(dataNodeIds).build());
+                    addArrays.add(GetDataNodes4AddResponse.Array.newBuilder().addAllItems(dataNodeAdds).build());
+                }
+                master.getChunkManager().batchAddChunks(chunks);
+                return GetDataNodes4AddResponse.newBuilder().addAllDataNodeIds(idArrays).addAllDataNodeAdds(addArrays).build();
+            case APPLY_RESULT:
+                if (this.failChunkIds != null && !this.failChunkIds.isEmpty()) {
+                    master.getNamespaceManager().eraseFileNode(this.path);
+                    master.getChunkManager().batchClearPendingDataNodes(this.failChunkIds);
+                }
+                master.getChunkManager().batchUpdatePendingDataNodes(this.infos);
+                master.getDataNodeManager().batchAddChunks(this.infos);
                 return null;
             default:
                 throw new Exception("Unknown stage");

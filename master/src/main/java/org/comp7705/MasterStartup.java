@@ -38,7 +38,6 @@ public class MasterStartup {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                // Use stderr here since the logger may have been reset by its JVM shutdown hook.
                 log.warn("*** shutting down gRPC server since JVM is shutting down");
                 try {
                     MasterStartup.stop();

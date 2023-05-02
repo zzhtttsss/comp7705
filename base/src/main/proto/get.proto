@@ -17,7 +17,7 @@ message CheckArgs4GetRequest {
 // chunkNum: the number of chunks the file will be cut into
 // operationId: the get operation id stored in the edits
 message CheckArgs4GetResponse {
-  int64 fileNodeId = 1;
+  string fileNodeId = 1;
   int32 chunkNum = 2;
   string operationId = 3;
   int64 fileSize=4;
@@ -27,7 +27,7 @@ message CheckArgs4GetResponse {
 // fileNodeId: file id stored in the directory tree
 // chunkIndex: the index of chunk
 message GetDataNodes4GetRequest {
-  int64 fileNodeId = 1;
+  string fileNodeId = 1;
   int32 chunkIndex = 2;
 }
 

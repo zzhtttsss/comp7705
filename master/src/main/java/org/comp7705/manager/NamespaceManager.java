@@ -13,7 +13,28 @@ public class NamespaceManager {
 
     public static final String ROOT_NAME = "root";
     public final FileNode root = new FileNode("root", null, 0, FileType.DIRECTORY);
-    public Set<Long> fileNodeIds = new HashSet<>();
+    public Set<String> fileNodeIds = new HashSet<>();
+
+    private NamespaceManager() {
+    }
+
+    public static NamespaceManager getInstance() {
+        return NamespaceManagerEnum.INSTANCE.getInstance();
+    }
+
+    public enum NamespaceManagerEnum {
+        INSTANCE;
+
+        private final NamespaceManager namespaceManager;
+
+        NamespaceManagerEnum() {
+            namespaceManager = new NamespaceManager();
+        }
+
+        public NamespaceManager getInstance() {
+            return namespaceManager;
+        }
+    }
 
     public FileNode getFileNode(String path) {
         FileNode currentNode = root;
@@ -82,7 +103,7 @@ public class NamespaceManager {
         return true;
     }
 
-    public boolean deleteFileNode(String path) {
+    public boolean removeFileNode(String path) {
         FileNode fileNode = getFileNode(path);
         if (fileNode == null) {
             return false;
@@ -121,26 +142,7 @@ public class NamespaceManager {
         return fileNodes;
     }
 
-    private NamespaceManager() {
-    }
 
-    public static NamespaceManager getInstance() {
-        return NamespaceManagerEnum.INSTANCE.getInstance();
-    }
-
-    public enum NamespaceManagerEnum {
-        INSTANCE;
-
-        private final NamespaceManager namespaceManager;
-
-        NamespaceManagerEnum() {
-            namespaceManager = new NamespaceManager();
-        }
-
-        public NamespaceManager getInstance() {
-            return namespaceManager;
-        }
-    }
 
 
 }

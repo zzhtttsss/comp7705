@@ -7,10 +7,11 @@ import java.util.Set;
 @Data
 public class Chunk {
     private String id;
-    private Set<DataNode> dataNodes;
-    private Set<DataNode> pendingDataNodes;
+    private Set<String> dataNodes;
+    private Set<String> pendingDataNodes;
 
-    public Chunk(String id) {
+    public Chunk(String id, Set<String> pendingDataNodes) {
         this.id = id;
+        this.pendingDataNodes = pendingDataNodes;
     }
 }

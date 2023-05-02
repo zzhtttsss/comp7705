@@ -19,7 +19,7 @@ message CheckArgs4AddRequest {
 // fileNodeId: file id stored in the directory tree
 // chunkNum: the number of chunks the file will be cut into
 message CheckArgs4AddResponse {
-  int64 fileNodeId = 1;
+  string fileNodeId = 1;
   int32 chunkNum = 2;
 }
 
@@ -27,7 +27,7 @@ message CheckArgs4AddResponse {
 // fileNodeId: file id stored in the directory tree
 // chunkIndex: the index of chunk
 message GetDataNodes4AddRequest {
-  int64 fileNodeId = 1;
+  string fileNodeId = 1;
   int32 chunkNum = 2;
 }
 
@@ -45,7 +45,7 @@ message GetDataNodes4AddResponse {
 // Callback4AddArgs
 // chunkId: id of chunk which has been stored by chunkserver and need to release its lease
 message Callback4AddRequest {
-  int64 fileNodeId = 1;
+  string fileNodeId = 1;
   string filePath = 2;
   repeated ChunkInfo4Add infos = 3;
   repeated string failChunkIds = 4;
