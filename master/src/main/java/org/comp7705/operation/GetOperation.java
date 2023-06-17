@@ -21,7 +21,7 @@ import static org.comp7705.Master.MASTER;
 @Data
 @Slf4j
 public class GetOperation implements Operation {
-    private Master master;
+    private static final Master master = MASTER;
 
     private String id;
     private String path;
@@ -30,13 +30,17 @@ public class GetOperation implements Operation {
     private String chunkId;
     private GetStage stage;
 
-    public GetOperation(String id, String path, String fileNodeId, int chunkIndex, String chunkId, GetStage stage) {
-        this.master = MASTER;
+    public GetOperation(String id, String path, GetStage stage) {
         this.id = id;
         this.path = path;
+        this.stage = stage;
+    }
+
+    public GetOperation(String id, String fileNodeId, int chunkIndex, GetStage stage) {
+        this.id = id;
         this.fileNodeId = fileNodeId;
         this.chunkIndex = chunkIndex;
-        this.chunkId = chunkId;
+        this.chunkId = fileNodeId + "_" + chunkIndex;
         this.stage = stage;
     }
 

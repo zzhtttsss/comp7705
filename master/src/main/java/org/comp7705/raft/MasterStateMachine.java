@@ -59,7 +59,6 @@ public class MasterStateMachine  extends StateMachineAdapter {
     @Override
     public void onApply(Iterator iterator) {
         while (iterator.hasNext()) {
-            logger.info("onApply");
             Operation operation;
             RequestProcessClosure closure = null;
             if (iterator.done() != null) {
@@ -77,7 +76,6 @@ public class MasterStateMachine  extends StateMachineAdapter {
 //                }
             }
 
-            logger.info("operation: {}", operation.getClass().getSimpleName());
             if (operation != null) {
                 try {
                     Message response = operation.apply();

@@ -1,6 +1,7 @@
 package org.comp7705.operation;
 
 import com.google.protobuf.Message;
+import com.google.protobuf.ProtocolStringList;
 import lombok.Data;
 import org.comp7705.Master;
 import org.comp7705.common.AddStage;
@@ -43,25 +44,28 @@ public class AddOperation implements Operation {
     private List<String> failChunkIds;
     private AddStage stage;
 
-    public AddOperation(String id, String path, String fileName, long size, String fileNodeId, int chunkNum,
-                        String chunkId, List<ChunkTaskResult> infos, List<String> failChunkIds, AddStage stage) {
-        this.id = id;
-        this.path = path;
-        this.fileName = fileName;
-        this.size = size;
-        this.fileNodeId = fileNodeId;
-        this.chunkNum = chunkNum;
-        this.chunkId = chunkId;
-        this.infos = infos;
-        this.failChunkIds = failChunkIds;
-        this.stage = stage;
-    }
-
     public AddOperation(String id, String path, String fileName, long size, AddStage stage) {
         this.id = id;
         this.path = path;
         this.fileName = fileName;
         this.size = size;
+        this.stage = stage;
+    }
+
+    public AddOperation(String id, String fileNodeId, int chunkNum, AddStage stage) {
+        this.id = id;
+        this.fileNodeId = fileNodeId;
+        this.chunkNum = chunkNum;
+        this.stage = stage;
+    }
+
+    public AddOperation(String id, String fileNodeId, String path, List<ChunkTaskResult> infos,
+                        List<String> failChunkIds, AddStage stage) {
+        this.id = id;
+        this.path = path;
+        this.fileNodeId = fileNodeId;
+        this.infos = infos;
+        this.failChunkIds = failChunkIds;
         this.stage = stage;
     }
 

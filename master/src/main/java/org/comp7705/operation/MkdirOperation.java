@@ -14,7 +14,7 @@ import static org.comp7705.Master.MASTER;
 @Slf4j
 @Data
 public class MkdirOperation implements Operation{
-    private Master master;
+    private static final Master master = MASTER;
 
     private String id;
     private String path;
@@ -24,7 +24,6 @@ public class MkdirOperation implements Operation{
         this.id = id;
         this.path = path;
         this.filename = filename;
-        this.master = MASTER;
     }
 
     @Override

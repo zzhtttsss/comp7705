@@ -12,4 +12,11 @@ public class ChunkTaskResult {
     private List<String> failDataNodes;
     private List<String> successDataNodes;
     private int sendType;
+
+    public ChunkTaskResult(String chunkId, List<String> failDataNodes, List<String> successDataNodes, int sendType) {
+        this.chunkId = chunkId;
+        this.failDataNodes = failDataNodes;
+        this.successDataNodes = successDataNodes;
+        this.sendType = sendType;
+    }
 }

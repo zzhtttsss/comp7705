@@ -4,7 +4,27 @@ import lombok.Getter;
 
 public enum RequestType {
 
-    CHECK_ARGS_4_ADD_REQUEST("CheckArgs4AddRequest");
+    CHECK_ARGS_4_ADD("CheckArgs4AddRequest"),
+
+    GET_DATA_NODES_4_ADD("GetDataNodes4AddRequest"),
+
+    CALLBACK_4_ADD("Callback4AddRequest"),
+
+    CHECK_ARGS_4_GET("CheckArgs4GetRequest"),
+
+    GET_DATA_NODES_4_GET("GetDataNodes4GetRequest"),
+
+    LIST("ListRequest"),
+
+    MKDIR("MkdirRequest"),
+
+    MOVE("MoveRequest"),
+
+    REMOVE("RemoveRequest"),
+
+    RENAME("RenameRequest"),
+
+    STAT("StatRequest");
 
     @Getter
     private final String name;

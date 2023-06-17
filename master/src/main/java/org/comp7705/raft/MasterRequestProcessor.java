@@ -1,6 +1,5 @@
 package org.comp7705.raft;
 
-import com.alipay.remoting.serialization.SerializerManager;
 import com.alipay.sofa.jraft.entity.Task;
 import com.alipay.sofa.jraft.rpc.RpcContext;
 import com.alipay.sofa.jraft.rpc.RpcProcessor;
@@ -8,11 +7,11 @@ import com.alipay.sofa.jraft.util.Requires;
 import lombok.Getter;
 import org.comp7705.MasterServer;
 import org.comp7705.common.AddStage;
+import org.comp7705.common.GetStage;
 import org.comp7705.common.RequestType;
-import org.comp7705.operation.AddOperation;
-import org.comp7705.operation.Operation;
-import org.comp7705.protocol.definition.CheckArgs4AddRequest;
-import org.comp7705.protocol.definition.CheckArgs4AddResponse;
+import org.comp7705.entity.ChunkTaskResult;
+import org.comp7705.operation.*;
+import org.comp7705.protocol.definition.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,9 +19,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.Objects;
-
-import static org.comp7705.common.RequestType.CHECK_ARGS_4_ADD_REQUEST;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class MasterRequestProcessor<T> implements RpcProcessor<T> {
 
@@ -49,24 +49,73 @@ public class MasterRequestProcessor<T> implements RpcProcessor<T> {
         RequestProcessClosure closure;
         RequestType type = RequestType.getRequestType(request.getClass().getSimpleName());
         switch (Objects.requireNonNull(type)) {
-            case CHECK_ARGS_4_ADD_REQUEST:
-                logger.info("Receive check args 4 add request.");
+            case CHECK_ARGS_4_ADD:
                 CheckArgs4AddRequest checkArgs4AddRequest = (CheckArgs4AddRequest) request;
-                operation = new AddOperation("a", checkArgs4AddRequest.getPath(), checkArgs4AddRequest.getFileName(),
-                        checkArgs4AddRequest.getSize(), AddStage.CHECK_ARGS);
-                closure = new RequestProcessClosure(operation, rpcCtx);
+                operation = new AddOperation(UUID.randomUUID().toString(), checkArgs4AddRequest.getPath(),
+                        checkArgs4AddRequest.getFileName(),checkArgs4AddRequest.getSize(), AddStage.CHECK_ARGS);
                 break;
-
+            case GET_DATA_NODES_4_ADD:
+                GetDataNodes4AddRequest getDataNodes4AddRequest = (GetDataNodes4AddRequest) request;
+                operation = new AddOperation(UUID.randomUUID().toString(), getDataNodes4AddRequest.getFileNodeId(),
+                        getDataNodes4AddRequest.getChunkNum(), AddStage.GET_DATA_NODES);
+                break;
+            case CALLBACK_4_ADD:
+                Callback4AddRequest callback4AddRequest = (Callback4AddRequest) request;
+                operation = new AddOperation(UUID.randomUUID().toString(), callback4AddRequest.getFileNodeId(),
+                        callback4AddRequest.getFilePath(), callback4AddRequest.getInfosList()
+                        .stream()
+                        .map(e -> new ChunkTaskResult(e.getChunkId(), e.getFailNodeList(), e.getSuccessNodeList(),
+                                0))
+                        .collect(Collectors.toList()),
+                        callback4AddRequest.getFailChunkIdsList(), AddStage.APPLY_RESULT);
+                break;
+            case CHECK_ARGS_4_GET:
+                CheckArgs4GetRequest checkArgs4GetRequest = (CheckArgs4GetRequest) request;
+                operation = new GetOperation(UUID.randomUUID().toString(), checkArgs4GetRequest.getPath(),
+                        GetStage.CHECK_ARGS);
+                break;
+            case GET_DATA_NODES_4_GET:
+                GetDataNodes4GetRequest getDataNodes4GetRequest = (GetDataNodes4GetRequest) request;
+                operation = new GetOperation(UUID.randomUUID().toString(), getDataNodes4GetRequest.getFileNodeId(),
+                        getDataNodes4GetRequest.getChunkIndex(), GetStage.GET_DATA_NODES);
+                break;
+            case LIST:
+                ListRequest listRequest = (ListRequest) request;
+                operation = new ListOperation(UUID.randomUUID().toString(), listRequest.getPath());
+                break;
+            case MKDIR:
+                MkDirRequest mkDirRequest = (MkDirRequest) request;
+                operation = new MkdirOperation(UUID.randomUUID().toString(), mkDirRequest.getPath(),
+                        mkDirRequest.getDirName());
+                break;
+            case MOVE:
+                MoveRequest moveRequest = (MoveRequest) request;
+                operation = new MoveOperation(UUID.randomUUID().toString(), moveRequest.getSourcePath(),
+                        moveRequest.getTargetPath());
+                break;
+            case REMOVE:
+                RemoveRequest removeRequest = (RemoveRequest) request;
+                operation = new RemoveOperation(UUID.randomUUID().toString(), removeRequest.getPath());
+                break;
+            case RENAME:
+                RenameRequest renameRequest = (RenameRequest) request;
+                operation = new RenameOperation(UUID.randomUUID().toString(), renameRequest.getPath(),
+                        renameRequest.getNewName());
+                break;
+            case STAT:
+                StatRequest statRequest = (StatRequest) request;
+                operation = new StatOperation(UUID.randomUUID().toString(), statRequest.getPath());
+                break;
             default:
                 return;
         }
+        closure = new RequestProcessClosure(operation, rpcCtx);
         try {
-            task.setData(ByteBuffer.wrap(serialize(operation)));
+            task.setData(ByteBuffer.wrap(serializeOperation(operation)));
         } catch (Exception e) {
             e.printStackTrace();
         }
         task.setDone(closure);
-        logger.info("Apply task {}.", task);
         masterServer.getNode().apply(task);
     }
 
@@ -75,7 +124,7 @@ public class MasterRequestProcessor<T> implements RpcProcessor<T> {
         return CheckArgs4AddRequest.class.getName();
     }
 
-    private byte[] serialize(Operation operation) throws IOException {
+    private byte[] serializeOperation(Operation operation) throws IOException {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         ObjectOutputStream oo = new ObjectOutputStream(bo);
         oo.writeObject(operation);
