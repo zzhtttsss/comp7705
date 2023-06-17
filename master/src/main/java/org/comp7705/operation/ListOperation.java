@@ -1,9 +1,15 @@
 package org.comp7705.operation;
 
+import com.google.protobuf.Message;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.comp7705.Master;
 import org.comp7705.common.FileType;
+import org.comp7705.metadata.FileNode;
+import org.comp7705.protocol.definition.FileInfo;
+import org.comp7705.protocol.definition.ListResponse;
+
+import java.util.List;
 
 import static org.comp7705.Master.MASTER;
 
@@ -23,7 +29,13 @@ public class ListOperation implements Operation{
     }
 
     @Override
-    public Object apply() throws Exception {
-        return master.getNamespaceManager().listFileNode(this.path);
+    public Message apply() throws Exception {
+        List<FileNode> fileNodes = master.getNamespaceManager().listFileNode(this.path);
+        ListResponse.Builder builder = ListResponse.newBuilder();
+        for (FileNode fileNode : fileNodes) {
+            builder.addFiles(FileInfo.newBuilder().setFileName(fileNode.getName())
+                    .setIsFile(fileNode.getType() == FileType.FILE).build());
+        }
+        return ListResponse.newBuilder().build();
     }
 }

@@ -3,6 +3,9 @@ package org.comp7705.manager;
 import org.comp7705.common.FileStatus;
 import org.comp7705.common.FileType;
 import org.comp7705.metadata.FileNode;
+import org.comp7705.raft.MasterStateMachine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -11,8 +14,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class NamespaceManager {
 
-    public static final String ROOT_NAME = "root";
+    private static final Logger logger = LoggerFactory.getLogger(NamespaceManager.class);
+
+    public static final String ROOT_PATH = "/";
+
     public final FileNode root = new FileNode("root", null, 0, FileType.DIRECTORY);
+
     public Set<String> fileNodeIds = new HashSet<>();
 
     private NamespaceManager() {
@@ -40,7 +47,7 @@ public class NamespaceManager {
         FileNode currentNode = root;
         path = path.trim();
         String[] fileNames = path.split("/");
-        if (path.equals(root.getName())) {
+        if (path.equals(ROOT_PATH)) {
             return currentNode;
         }
         for (String name : fileNames) {
@@ -57,7 +64,9 @@ public class NamespaceManager {
     }
 
     public FileNode addFileNode(String path, String filename, FileType type, long size) {
+        logger.info("addFileNode: path={}, filename={}, type={}, size={}", path, filename, type, size);
         FileNode fileNode = getFileNode(path);
+        logger.info("addFileNode: fileNode={}", fileNode.getName());
         if (fileNode == null || fileNode.getType() != FileType.DIRECTORY) {
             return null;
         }

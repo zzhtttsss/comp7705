@@ -1,9 +1,12 @@
 package org.comp7705.operation;
 
+import com.google.protobuf.Message;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.comp7705.Master;
 import org.comp7705.common.FileType;
+import org.comp7705.protocol.definition.RemoveResponse;
+import org.comp7705.protocol.definition.RenameResponse;
 
 import static org.comp7705.Master.MASTER;
 
@@ -25,7 +28,8 @@ public class RenameOperation implements Operation{
     }
 
     @Override
-    public Object apply() throws Exception {
-        return master.getNamespaceManager().renameFileNode(this.path, this.newName);
+    public Message apply() throws Exception {
+        master.getNamespaceManager().renameFileNode(this.path, this.newName);
+        return RenameResponse.newBuilder().build();
     }
 }

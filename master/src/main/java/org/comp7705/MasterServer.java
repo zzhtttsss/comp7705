@@ -1,73 +1,79 @@
 package org.comp7705;
 
-import io.grpc.stub.StreamObserver;
-import org.comp7705.protocol.definition.*;
-import org.comp7705.protocol.service.MasterServiceGrpc;
+import com.alipay.sofa.jraft.Node;
+import com.alipay.sofa.jraft.RaftGroupService;
+import com.alipay.sofa.jraft.entity.PeerId;
+import com.alipay.sofa.jraft.option.NodeOptions;
+import com.alipay.sofa.jraft.rpc.RaftRpcServerFactory;
+import com.alipay.sofa.jraft.rpc.RpcServer;
+import org.apache.commons.io.FileUtils;
+import org.comp7705.grpc.MasterGrpcHelper;
+import org.comp7705.protocol.definition.CheckArgs4AddRequest;
+import org.comp7705.raft.*;
 
-public class MasterServer extends MasterServiceGrpc.MasterServiceImplBase {
+import java.io.File;
+import java.io.IOException;
 
-    @Override
-    public void joinCluster(JoinClusterRequest request, StreamObserver<JoinClusterResponse> responseObserver) {
+public class MasterServer {
 
+    private RaftGroupService raftGroupService;
+    private Node node;
+    private MasterStateMachine fsm;
+
+    public MasterServer(final String dataPath, final String groupId, final PeerId serverId,
+                         final NodeOptions nodeOptions) throws IOException {
+        // init raft data path, it contains log,meta,snapshot
+        FileUtils.forceMkdir(new File(dataPath));
+
+        // here use same RPC server for raft and business. It also can be seperated generally
+        final RpcServer rpcServer = RaftRpcServerFactory.createRaftRpcServer(serverId.getEndpoint());
+        // GrpcServer need init marshaller
+        MasterGrpcHelper.initGRpc();
+        MasterGrpcHelper.setRpcServer(rpcServer);
+        // register business processor
+        rpcServer.registerProcessor(new MasterRequestProcessor<>
+                (CheckArgs4AddRequest.class, this));
+        // init state machine
+        this.fsm = new MasterStateMachine();
+        // set fsm to nodeOptions
+        nodeOptions.setFsm(this.fsm);
+        // set storage path (log,meta,snapshot)
+        // log, must
+        nodeOptions.setLogUri(dataPath + File.separator + "log");
+        // meta, must
+        nodeOptions.setRaftMetaUri(dataPath + File.separator + "raft_meta");
+        // snapshot, optional, generally recommended
+        nodeOptions.setSnapshotUri(dataPath + File.separator + "snapshot");
+        // init raft group service framework
+        this.raftGroupService = new RaftGroupService(groupId, serverId, nodeOptions, rpcServer);
+        // start raft node
+        this.node = this.raftGroupService.start();
     }
 
-    @Override
-    public void register(DNRegisterRequest request, StreamObserver<DNRegisterResponse> responseObserver) {
+    public MasterStateMachine getFsm() {
+        return this.fsm;
     }
 
-    @Override
-    public void heartbeat(HeartbeatRequest request, StreamObserver<HeartbeatResponse> responseObserver) {
+    public Node getNode() {
+        return this.node;
     }
 
-    @Override
-    public void checkArgs4Add(CheckArgs4AddRequest request, StreamObserver<CheckArgs4AddResponse> responseObserver) {
+    public RaftGroupService getRaftGroupService() {
+        return this.raftGroupService;
     }
 
-    @Override
-    public void getDataNodes4Add(GetDataNodes4AddRequest request, StreamObserver<GetDataNodes4AddResponse> responseObserver) {
-    }
+    /**
+     * Redirect request to new leader
+     */
+//    public <T> T redirect(T t) {
+//        final ValueResponse.Builder builder = ValueResponse.newBuilder().setSuccess(false);
+//        if (this.node != null) {
+//            final PeerId leader = this.node.getLeaderId();
+//            if (leader != null) {
+//                builder.setRedirect(leader.toString());
+//            }
+//        }
+//        return builder.build();
+//    }
 
-    @Override
-    public void callback4Add(Callback4AddRequest request, StreamObserver<Callback4AddResponse> responseObserver) {
-    }
-
-    @Override
-    public void checkArgs4Get(CheckArgs4GetRequest request, StreamObserver<CheckArgs4GetResponse> responseObserver) {
-    }
-
-    @Override
-    public void getDataNodes4Get(GetDataNodes4GetRequest request, StreamObserver<GetDataNodes4GetResponse> responseObserver) {
-    }
-
-    @Override
-    public void releaseLease4Get(ReleaseLease4GetRequest request, StreamObserver<ReleaseLease4GetResponse> responseObserver) {
-    }
-
-    @Override
-    public void list(ListRequest request, StreamObserver<ListResponse> responseObserver) {
-    }
-
-    @Override
-    public void mkdir(MkDirRequest request, StreamObserver<MkDirResponse> responseObserver) {
-    }
-
-    @Override
-    public void move(MoveRequest request, StreamObserver<MoveResponse> responseObserver) {
-    }
-
-    @Override
-    public void stat(StatRequest request, StreamObserver<StatResponse> responseObserver) {
-    }
-
-    @Override
-    public void remove(RemoveRequest request, StreamObserver<RemoveResponse> responseObserver) {
-    }
-
-    @Override
-    public void rename(RenameRequest request, StreamObserver<RenameResponse> responseObserver) {
-    }
-
-    public void close() {
-
-    }
 }

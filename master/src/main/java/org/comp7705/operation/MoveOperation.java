@@ -1,9 +1,11 @@
 package org.comp7705.operation;
 
+import com.google.protobuf.Message;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.comp7705.Master;
 import org.comp7705.common.FileType;
+import org.comp7705.protocol.definition.MoveResponse;
 
 import static org.comp7705.Master.MASTER;
 
@@ -26,7 +28,8 @@ public class MoveOperation implements Operation{
     }
 
     @Override
-    public Object apply() throws Exception {
-        return master.getNamespaceManager().moveFileNode(this.sourcePath, this.targetPath);
+    public Message apply() throws Exception {
+        master.getNamespaceManager().moveFileNode(this.sourcePath, this.targetPath);
+        return MoveResponse.newBuilder().build();
     }
 }

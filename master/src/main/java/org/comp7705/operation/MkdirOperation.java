@@ -1,9 +1,12 @@
 package org.comp7705.operation;
 
+import com.google.protobuf.Message;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.comp7705.Master;
 import org.comp7705.common.FileType;
+import org.comp7705.metadata.FileNode;
+import org.comp7705.protocol.definition.MkDirResponse;
 
 import static org.comp7705.Master.MASTER;
 
@@ -25,7 +28,8 @@ public class MkdirOperation implements Operation{
     }
 
     @Override
-    public Object apply() throws Exception {
-        return master.getNamespaceManager().addFileNode(this.path, this.filename, FileType.DIRECTORY, 0);
+    public Message apply() throws Exception {
+       master.getNamespaceManager().addFileNode(this.path, this.filename, FileType.DIRECTORY, 0);
+       return MkDirResponse.newBuilder().build();
     }
 }

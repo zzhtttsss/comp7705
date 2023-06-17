@@ -1,6 +1,10 @@
 package org.comp7705.operation;
 
-public interface Operation {
+import com.google.protobuf.Message;
 
-    public Object apply() throws Exception;
+import java.io.Serializable;
+
+public interface Operation extends Serializable {
+
+    public Message apply() throws Exception;
 }

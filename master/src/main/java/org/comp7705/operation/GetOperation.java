@@ -1,11 +1,16 @@
 package org.comp7705.operation;
 
+import com.google.protobuf.Message;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.comp7705.Master;
 import org.comp7705.common.GetStage;
 import org.comp7705.metadata.Chunk;
 import org.comp7705.metadata.DataNode;
+import org.comp7705.metadata.FileNode;
+import org.comp7705.protocol.definition.CheckArgs4AddResponse;
+import org.comp7705.protocol.definition.CheckArgs4GetRequest;
+import org.comp7705.protocol.definition.CheckArgs4GetResponse;
 import org.comp7705.protocol.definition.GetDataNodes4GetResponse;
 
 import java.util.ArrayList;
@@ -16,7 +21,6 @@ import static org.comp7705.Master.MASTER;
 @Data
 @Slf4j
 public class GetOperation implements Operation {
-
     private Master master;
 
     private String id;
@@ -37,10 +41,12 @@ public class GetOperation implements Operation {
     }
 
     @Override
-    public Object apply() throws Exception {
+    public Message apply() throws Exception {
         switch (this.stage) {
             case CHECK_ARGS:
-                return master.getNamespaceManager().getFileNode(this.path);
+                FileNode fileNode = master.getNamespaceManager().getFileNode(this.path);
+                return CheckArgs4GetResponse.newBuilder().setFileNodeId(fileNode.getId())
+                        .setChunkNum(fileNode.getChunks().size()).setFileSize(fileNode.getSize()).build();
             case GET_DATA_NODES:
                 Chunk chunk = master.getChunkManager().getChunkMap().get(this.chunkId);
                 if (chunk == null) {

@@ -52,4 +52,16 @@ public class FileNode {
         }
     }
 
+    @Override
+    public String toString() {
+        return "FileNode{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", chunks=" + chunks +
+                ", size=" + size +
+                ", type=" + type +
+                ", delTime=" + delTime +
+                ", status=" + status +
+                '}';
+    }
 }
