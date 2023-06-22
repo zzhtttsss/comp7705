@@ -24,7 +24,7 @@ public class testSofaRaft {
 //            System.exit(1);
 //        }
         final String groupId = "master";
-        final String confStr = "127.0.0.1:8081";
+        final String confStr = "172.18.0.12:8081";
         MasterGrpcHelper.initGRpc();
 
         final Configuration conf = new Configuration();

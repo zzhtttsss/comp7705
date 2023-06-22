@@ -55,6 +55,10 @@
           <artifactId>protobuf-java</artifactId>
           <groupId>com.google.protobuf</groupId>
         </exclusion>
+        <exclusion>
+          <artifactId>bolt</artifactId>
+          <groupId>com.alipay.sofa</groupId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>

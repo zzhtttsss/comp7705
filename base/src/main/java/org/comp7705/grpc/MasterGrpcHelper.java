@@ -2,9 +2,8 @@ package org.comp7705.grpc;
 
 import com.alipay.sofa.jraft.rpc.RpcServer;
 
-import com.alipay.sofa.jraft.rpc.impl.GrpcRaftRpcFactory;
-import com.alipay.sofa.jraft.rpc.impl.MarshallerRegistry;
 import com.alipay.sofa.jraft.util.RpcFactoryHelper;
+import com.google.protobuf.Message;
 import org.comp7705.protocol.definition.CheckArgs4AddRequest;
 import org.comp7705.protocol.definition.CheckArgs4AddResponse;
 import org.slf4j.Logger;
@@ -20,15 +19,33 @@ public class MasterGrpcHelper {
     public static RpcServer rpcServer;
 
     public static void initGRpc() {
-        GrpcRaftRpcFactory raftRpcFactory = (GrpcRaftRpcFactory) RpcFactoryHelper.rpcFactory();
-        raftRpcFactory.registerProtobufSerializer(CheckArgs4AddRequest.class.getName(),
-                CheckArgs4AddRequest.getDefaultInstance());
-        raftRpcFactory.registerProtobufSerializer(
-                CheckArgs4AddResponse.class.getName(),
-                CheckArgs4AddResponse.getDefaultInstance());
-        MarshallerRegistry registry = raftRpcFactory.getMarshallerRegistry();
-        registry.registerResponseInstance(CheckArgs4AddRequest.class.getName(),
-                CheckArgs4AddResponse.getDefaultInstance());
+//        GrpcRaftRpcFactory raftRpcFactory = (GrpcRaftRpcFactory) RpcFactoryHelper.rpcFactory();
+//        raftRpcFactory.registerProtobufSerializer(CheckArgs4AddRequest.class.getName(),
+//                CheckArgs4AddRequest.getDefaultInstance());
+//        raftRpcFactory.registerProtobufSerializer(
+//                CheckArgs4AddResponse.class.getName(),
+//                CheckArgs4AddResponse.getDefaultInstance());
+//        MarshallerRegistry registry = raftRpcFactory.getMarshallerRegistry();
+//        registry.registerResponseInstance(CheckArgs4AddRequest.class.getName(),
+//                CheckArgs4AddResponse.getDefaultInstance());
+
+        if ("com.alipay.sofa.jraft.rpc.impl.GrpcRaftRpcFactory".equals(RpcFactoryHelper.rpcFactory().getClass()
+                .getName())) {
+            logger.info("aaaa");
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(CheckArgs4AddRequest.class.getName(),
+                    CheckArgs4AddRequest.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(CheckArgs4AddResponse.class.getName(),
+                    CheckArgs4AddResponse.getDefaultInstance());
+
+            try {
+                Class<?> clazz = Class.forName("com.alipay.sofa.jraft.rpc.impl.MarshallerHelper");
+                Method registerRespInstance = clazz.getMethod("registerRespInstance", String.class, Message.class);
+                registerRespInstance.invoke(null, CheckArgs4AddRequest.class.getName(),
+                        CheckArgs4AddResponse.getDefaultInstance());
+            } catch (Exception e) {
+                logger.error("Failed to init grpc server", e);
+            }
+        }
     }
 
     public static void setRpcServer(RpcServer rpcServer) {
