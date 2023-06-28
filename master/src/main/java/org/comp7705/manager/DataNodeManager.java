@@ -1,8 +1,11 @@
 package org.comp7705.manager;
 
 import org.comp7705.common.DataNodeStatus;
+import org.comp7705.common.SendStatus;
+import org.comp7705.common.SendType;
 import org.comp7705.entity.ChunkTaskResult;
 import org.comp7705.metadata.DataNode;
+import org.comp7705.operation.HeartbeatOperation;
 
 import java.util.*;
 
@@ -96,5 +99,45 @@ public class DataNodeManager {
         return dns;
     }
 
+    public List<DataNode.ChunkSendInfo> updateDataNode4Heartbeat(HeartbeatOperation operation) {
+        DataNode dataNode = dataNodeMap.get(operation.getDataNodeId());
+        if (dataNode == null) {
+            return null;
+        }
+        dataNode.setFullCapacity(operation.getFullCapacity());
+        dataNode.setUsedCapacity(operation.getUsedCapacity());
+        dataNode.setLastHeartbeatTime(System.currentTimeMillis());
+        if (operation.isReady()) {
+            dataNode.setStatus(DataNodeStatus.ALIVE);
+        }
+        dataNode.setIoLoad(operation.getIoLoad());
+        for (DataNode.ChunkSendInfo info : operation.getSuccessInfos()) {
+            dataNode.getFutureSendChunks().remove(info);
+            if (info.getSendType() == SendType.MOVE || info.getSendType() == SendType.DELETE) {
+                dataNode.getChunks().remove(info.getChunkId());
+            }
+            if (dataNodeMap.containsKey(info.getDataNodeId())) {
+                dataNodeMap.get(info.getDataNodeId()).getChunks().add(info.getChunkId());
+            }
+        }
+        for (DataNode.ChunkSendInfo info : operation.getFailInfos()) {
+            dataNode.getFutureSendChunks().remove(info);
+            if (info.getSendType() == SendType.MOVE || info.getSendType() == SendType.DELETE) {
+                continue;
+            }
+            ChunkManager.getInstance().getPendingChunkQueue().push(info.getChunkId());
+        }
+        for (String chunkId : operation.getInvalidChunks()) {
+            dataNode.getChunks().remove(chunkId);
+        }
 
+        ArrayList<DataNode.ChunkSendInfo> nextChunkInfos = new ArrayList<>();
+        for (Map.Entry<DataNode.ChunkSendInfo, Integer> entry : dataNode.getFutureSendChunks().entrySet()) {
+            if (entry.getValue() == SendStatus.TO_BE_INFORMED.getType()) {
+                nextChunkInfos.add(entry.getKey());
+                dataNode.getFutureSendChunks().put(entry.getKey(), SendStatus.TO_BE_SENT.getType());
+            }
+        }
+        return nextChunkInfos;
+    }
 }

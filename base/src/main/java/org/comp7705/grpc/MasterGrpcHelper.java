@@ -4,8 +4,7 @@ import com.alipay.sofa.jraft.rpc.RpcServer;
 
 import com.alipay.sofa.jraft.util.RpcFactoryHelper;
 import com.google.protobuf.Message;
-import org.comp7705.protocol.definition.CheckArgs4AddRequest;
-import org.comp7705.protocol.definition.CheckArgs4AddResponse;
+import org.comp7705.protocol.definition.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,17 +30,58 @@ public class MasterGrpcHelper {
 
         if ("com.alipay.sofa.jraft.rpc.impl.GrpcRaftRpcFactory".equals(RpcFactoryHelper.rpcFactory().getClass()
                 .getName())) {
-            logger.info("aaaa");
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(CheckArgs4AddRequest.class.getName(),
                     CheckArgs4AddRequest.getDefaultInstance());
-            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(CheckArgs4AddResponse.class.getName(),
-                    CheckArgs4AddResponse.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(GetDataNodes4AddRequest.class.getName(),
+                    GetDataNodes4AddResponse.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(Callback4AddRequest.class.getName(),
+                    Callback4AddResponse.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(CheckArgs4GetRequest.class.getName(),
+                    CheckArgs4GetResponse.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(GetDataNodes4GetRequest.class.getName(),
+                    GetDataNodes4GetResponse.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(HeartbeatRequest.class.getName(),
+                    HeartbeatResponse.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(ListRequest.class.getName(),
+                    ListResponse.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(MkDirRequest.class.getName(),
+                    MkDirResponse.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(MoveRequest.class.getName(),
+                    MoveResponse.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(RemoveRequest.class.getName(),
+                    RemoveResponse.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(RenameRequest.class.getName(),
+                    RenameResponse.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(StatRequest.class.getName(),
+                    StatResponse.getDefaultInstance());
 
             try {
                 Class<?> clazz = Class.forName("com.alipay.sofa.jraft.rpc.impl.MarshallerHelper");
                 Method registerRespInstance = clazz.getMethod("registerRespInstance", String.class, Message.class);
                 registerRespInstance.invoke(null, CheckArgs4AddRequest.class.getName(),
                         CheckArgs4AddResponse.getDefaultInstance());
+                registerRespInstance.invoke(null, GetDataNodes4AddRequest.class.getName(),
+                        GetDataNodes4AddResponse.getDefaultInstance());
+                registerRespInstance.invoke(null, Callback4AddRequest.class.getName(),
+                        Callback4AddResponse.getDefaultInstance());
+                registerRespInstance.invoke(null, CheckArgs4GetRequest.class.getName(),
+                        CheckArgs4GetResponse.getDefaultInstance());
+                registerRespInstance.invoke(null, GetDataNodes4GetRequest.class.getName(),
+                        GetDataNodes4GetResponse.getDefaultInstance());
+                registerRespInstance.invoke(null, HeartbeatRequest.class.getName(),
+                        HeartbeatResponse.getDefaultInstance());
+                registerRespInstance.invoke(null, ListRequest.class.getName(),
+                        ListResponse.getDefaultInstance());
+                registerRespInstance.invoke(null, MkDirRequest.class.getName(),
+                        MkDirResponse.getDefaultInstance());
+                registerRespInstance.invoke(null, MoveRequest.class.getName(),
+                        MoveResponse.getDefaultInstance());
+                registerRespInstance.invoke(null, RemoveRequest.class.getName(),
+                        RemoveResponse.getDefaultInstance());
+                registerRespInstance.invoke(null, RenameRequest.class.getName(),
+                        RenameResponse.getDefaultInstance());
+                registerRespInstance.invoke(null, StatRequest.class.getName(),
+                        StatResponse.getDefaultInstance());
             } catch (Exception e) {
                 logger.error("Failed to init grpc server", e);
             }

@@ -8,7 +8,8 @@ public enum OperationType {
     MOVE("MoveOperation"),
     REMOVE("RemoveOperation"),
     RENAME("RenameOperation"),
-    STAT("StatOperation");
+    STAT("StatOperation"),
+    HEARTBEAT("HeartbeatOperation");
 
     private final String name;
 

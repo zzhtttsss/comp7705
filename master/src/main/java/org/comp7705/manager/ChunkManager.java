@@ -2,8 +2,11 @@ package org.comp7705.manager;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.comp7705.common.SendType;
 import org.comp7705.entity.ChunkTaskResult;
 import org.comp7705.metadata.Chunk;
+import org.comp7705.metadata.DataNode;
+import org.comp7705.operation.HeartbeatOperation;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -71,7 +74,28 @@ public class ChunkManager {
         }
     }
 
-
+    public void updateChunk4Heartbeat(HeartbeatOperation heartbeatOperation) {
+        for (DataNode.ChunkSendInfo chunkSendInfo : heartbeatOperation.getSuccessInfos()) {
+            if (chunkMap.containsKey(chunkSendInfo.getChunkId())) {
+                chunkMap.get(chunkSendInfo.getChunkId()).getPendingDataNodes().remove(chunkSendInfo.getDataNodeId());
+                chunkMap.get(chunkSendInfo.getChunkId()).getDataNodes().add(chunkSendInfo.getDataNodeId());
+                if (chunkSendInfo.getSendType() == SendType.MOVE) {
+                    chunkMap.get(chunkSendInfo.getChunkId()).getDataNodes().remove(heartbeatOperation.getDataNodeId());
+                }
+            }
+        }
+        for (DataNode.ChunkSendInfo chunkSendInfo : heartbeatOperation.getFailInfos()) {
+            if (chunkMap.containsKey(chunkSendInfo.getChunkId())) {
+                chunkMap.get(chunkSendInfo.getChunkId()).getPendingDataNodes().remove(chunkSendInfo.getDataNodeId());
+            }
+        }
+        for (String chunkId : heartbeatOperation.getInvalidChunks()) {
+            if (chunkMap.containsKey(chunkId)) {
+                chunkMap.get(chunkId).getDataNodes().remove(heartbeatOperation.getDataNodeId());
+                pendingChunkQueue.add(chunkId);
+            }
+        }
+    }
 
 
 }
