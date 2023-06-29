@@ -1,19 +1,23 @@
 package org.comp7705.manager;
 
+import org.comp7705.Master;
 import org.comp7705.common.DataNodeStatus;
+import org.comp7705.common.DegradeStage;
 import org.comp7705.common.SendStatus;
-import org.comp7705.common.SendType;
 import org.comp7705.entity.ChunkTaskResult;
 import org.comp7705.metadata.DataNode;
 import org.comp7705.operation.HeartbeatOperation;
+import org.comp7705.protocol.definition.SendType;
 
 import java.util.*;
 
 public class DataNodeManager {
 
-    public Map<String, DataNode> dataNodeMap = new HashMap<>();
+    private final Master master = Master.MASTER;
 
-    public PriorityQueue<DataNode> dataNodeHeap = new PriorityQueue<>((o1, o2) -> o2.calUsage() - o1.calUsage());
+    private final Map<String, DataNode> dataNodeMap = new HashMap<>();
+
+    private final PriorityQueue<DataNode> dataNodeHeap = new PriorityQueue<>((o1, o2) -> o2.calUsage() - o1.calUsage());
 
 
     private DataNodeManager() {
@@ -35,6 +39,14 @@ public class DataNodeManager {
         public DataNodeManager getInstance() {
             return dataNodeManager;
         }
+    }
+
+    public Map<String, DataNode> getDataNodeMap() {
+        return dataNodeMap;
+    }
+
+    public PriorityQueue<DataNode> getDataNodeHeap() {
+        return dataNodeHeap;
     }
 
     public ArrayList<ArrayList<DataNode>> batchAllocateDataNodes(int chunkNum) {
@@ -122,10 +134,6 @@ public class DataNodeManager {
         }
         for (DataNode.ChunkSendInfo info : operation.getFailInfos()) {
             dataNode.getFutureSendChunks().remove(info);
-            if (info.getSendType() == SendType.MOVE || info.getSendType() == SendType.DELETE) {
-                continue;
-            }
-            ChunkManager.getInstance().getPendingChunkQueue().push(info.getChunkId());
         }
         for (String chunkId : operation.getInvalidChunks()) {
             dataNode.getChunks().remove(chunkId);

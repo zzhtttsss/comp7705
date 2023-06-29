@@ -2,7 +2,7 @@ package org.comp7705.metadata;
 
 import lombok.Data;
 import org.comp7705.common.DataNodeStatus;
-import org.comp7705.common.SendType;
+import org.comp7705.protocol.definition.SendType;
 
 import java.util.HashMap;
 import java.util.HashSet;

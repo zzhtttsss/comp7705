@@ -3,10 +3,9 @@ package org.comp7705;
 import com.alipay.sofa.jraft.conf.Configuration;
 import com.alipay.sofa.jraft.entity.PeerId;
 import com.alipay.sofa.jraft.option.NodeOptions;
-import io.grpc.Server;
 import lombok.extern.slf4j.Slf4j;
 import org.comp7705.grpc.MasterGrpcHelper;
-import org.comp7705.raft.MasterStateMachine;
+import org.comp7705.service.HeartbeatService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +66,10 @@ public class MasterStartup {
 
         // start raft server
         masterServer = new MasterServer(dataPath, groupId, serverId, nodeOptions);
+        HeartbeatService heartbeatService = new HeartbeatService(masterServer);
+        MASTER.setMasterServer(masterServer);
+        MASTER.setHeartbeatService(heartbeatService);
+        heartbeatService.run();
         logger.info("Started counter server at port:"
                 + masterServer.getNode().getNodeId().getPeerId().getPort());
         // GrpcServer need block to prevent process exit

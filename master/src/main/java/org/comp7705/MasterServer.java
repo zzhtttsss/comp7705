@@ -16,9 +16,9 @@ import java.io.IOException;
 
 public class MasterServer {
 
-    private RaftGroupService raftGroupService;
-    private Node node;
-    private MasterStateMachine fsm;
+    private final RaftGroupService raftGroupService;
+    private final Node node;
+    private final MasterStateMachine fsm;
 
     public MasterServer(final String dataPath, final String groupId, final PeerId serverId,
                          final NodeOptions nodeOptions) throws IOException {

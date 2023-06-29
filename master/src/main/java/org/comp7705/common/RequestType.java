@@ -24,7 +24,9 @@ public enum RequestType {
 
     RENAME("RenameRequest"),
 
-    STAT("StatRequest");
+    STAT("StatRequest"),
+
+    HEARTBEAT("HeartbeatRequest");
 
     @Getter
     private final String name;

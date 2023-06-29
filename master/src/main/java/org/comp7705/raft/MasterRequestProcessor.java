@@ -10,6 +10,7 @@ import org.comp7705.common.AddStage;
 import org.comp7705.common.GetStage;
 import org.comp7705.common.RequestType;
 import org.comp7705.entity.ChunkTaskResult;
+import org.comp7705.metadata.DataNode;
 import org.comp7705.operation.*;
 import org.comp7705.protocol.definition.*;
 import org.slf4j.Logger;
@@ -19,9 +20,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class MasterRequestProcessor<T> implements RpcProcessor<T> {
@@ -106,6 +106,15 @@ public class MasterRequestProcessor<T> implements RpcProcessor<T> {
                 StatRequest statRequest = (StatRequest) request;
                 operation = new StatOperation(UUID.randomUUID().toString(), statRequest.getPath());
                 break;
+            case HEARTBEAT:
+                HeartbeatRequest heartbeatRequest = (HeartbeatRequest) request;
+                operation = new HeartbeatOperation(UUID.randomUUID().toString(), heartbeatRequest.getId(),
+                        heartbeatRequest.getChunkIdList(), heartbeatRequest.getIOLoad(),
+                        heartbeatRequest.getFullCapacity(), heartbeatRequest.getUsedCapacity(),
+                        conv2ChunkSendInfo(heartbeatRequest.getSuccessChunkInfosList()),
+                        conv2ChunkSendInfo(heartbeatRequest.getFailChunkInfosList()),
+                        heartbeatRequest.getInvalidChunksList(), heartbeatRequest.getIsReady());
+                break;
             default:
                 return;
         }
@@ -124,7 +133,7 @@ public class MasterRequestProcessor<T> implements RpcProcessor<T> {
         return CheckArgs4AddRequest.class.getName();
     }
 
-    private byte[] serializeOperation(Operation operation) throws IOException {
+    public static byte[] serializeOperation(Operation operation) throws IOException {
         ByteArrayOutputStream bo = new ByteArrayOutputStream();
         ObjectOutputStream oo = new ObjectOutputStream(bo);
         oo.writeObject(operation);
@@ -132,5 +141,14 @@ public class MasterRequestProcessor<T> implements RpcProcessor<T> {
         bo.close();
         oo.close();
         return bytes;
+    }
+
+    private List<DataNode.ChunkSendInfo> conv2ChunkSendInfo(List<ChunkInfo> chunkInfos) {
+        List<DataNode.ChunkSendInfo> chunkSendInfos = new ArrayList<>(chunkInfos.size());
+        for (ChunkInfo chunkInfo: chunkInfos) {
+            chunkSendInfos.add(new DataNode.ChunkSendInfo(chunkInfo.getDataNodeId(), chunkInfo.getChunkId(),
+                    chunkInfo.getSendType()));
+        }
+        return chunkSendInfos;
     }
 }

@@ -8,7 +8,7 @@ option java_string_check_utf8 = true;
 message HeartbeatRequest {
   string Id = 1;
   repeated string ChunkId = 2;
-  int64 IOLoad = 3;
+  int32 IOLoad = 3;
   int64 FullCapacity = 4;
   int64 UsedCapacity = 5;
   repeated ChunkInfo SuccessChunkInfos = 6;
@@ -25,5 +25,12 @@ message HeartbeatResponse {
 message ChunkInfo{
   string ChunkId = 1;
   string DataNodeId = 2;
-  int32 SendType = 3;
+  SendType SendType = 3;
+}
+
+enum SendType {
+  COPY = 0;
+  MOVE = 1;
+  DELETE = 2;
+  ADD = 3;
 }
