@@ -57,7 +57,7 @@ service MasterService {
 
   // CheckAndMkdir Called by client.
   // Check args and make directory at target path.
-  rpc Mkdir(MkDirRequest) returns(MkDirResponse);
+  rpc Mkdir(MkdirRequest) returns(MkdirResponse);
 
   // CheckAndMove Called by client.
   // Check args and move directory or file to target path.

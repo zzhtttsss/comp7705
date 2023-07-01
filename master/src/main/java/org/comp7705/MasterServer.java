@@ -8,7 +8,7 @@ import com.alipay.sofa.jraft.rpc.RaftRpcServerFactory;
 import com.alipay.sofa.jraft.rpc.RpcServer;
 import org.apache.commons.io.FileUtils;
 import org.comp7705.grpc.MasterGrpcHelper;
-import org.comp7705.protocol.definition.CheckArgs4AddRequest;
+import org.comp7705.protocol.definition.*;
 import org.comp7705.raft.*;
 
 import java.io.File;
@@ -31,8 +31,18 @@ public class MasterServer {
         MasterGrpcHelper.initGRpc();
         MasterGrpcHelper.setRpcServer(rpcServer);
         // register business processor
-        rpcServer.registerProcessor(new MasterRequestProcessor<>
-                (CheckArgs4AddRequest.class, this));
+        rpcServer.registerProcessor(new MasterRequestProcessor<>(CheckArgs4AddRequest.class, this));
+        rpcServer.registerProcessor(new MasterRequestProcessor<>(GetDataNodes4AddRequest.class, this));
+        rpcServer.registerProcessor(new MasterRequestProcessor<>(Callback4AddRequest.class, this));
+        rpcServer.registerProcessor(new MasterRequestProcessor<>(CheckArgs4GetRequest.class, this));
+        rpcServer.registerProcessor(new MasterRequestProcessor<>(GetDataNodes4GetRequest.class, this));
+        rpcServer.registerProcessor(new MasterRequestProcessor<>(MkdirRequest.class, this));
+        rpcServer.registerProcessor(new MasterRequestProcessor<>(ListRequest.class, this));
+        rpcServer.registerProcessor(new MasterRequestProcessor<>(MoveRequest.class, this));
+        rpcServer.registerProcessor(new MasterRequestProcessor<>(RenameRequest.class, this));
+        rpcServer.registerProcessor(new MasterRequestProcessor<>(RemoveRequest.class, this));
+        rpcServer.registerProcessor(new MasterRequestProcessor<>(StatRequest.class, this));
+        rpcServer.registerProcessor(new MasterRequestProcessor<>(HeartbeatRequest.class, this));
         // init state machine
         this.fsm = new MasterStateMachine();
         // set fsm to nodeOptions

@@ -32,27 +32,51 @@ public class MasterGrpcHelper {
                 .getName())) {
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(CheckArgs4AddRequest.class.getName(),
                     CheckArgs4AddRequest.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(CheckArgs4AddResponse.class.getName(),
+                    CheckArgs4AddResponse.getDefaultInstance());
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(GetDataNodes4AddRequest.class.getName(),
+                    GetDataNodes4AddRequest.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(GetDataNodes4AddResponse.class.getName(),
                     GetDataNodes4AddResponse.getDefaultInstance());
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(Callback4AddRequest.class.getName(),
+                    Callback4AddRequest.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(Callback4AddResponse.class.getName(),
                     Callback4AddResponse.getDefaultInstance());
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(CheckArgs4GetRequest.class.getName(),
+                    CheckArgs4GetRequest.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(CheckArgs4GetResponse.class.getName(),
                     CheckArgs4GetResponse.getDefaultInstance());
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(GetDataNodes4GetRequest.class.getName(),
+                    GetDataNodes4GetRequest.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(GetDataNodes4GetResponse.class.getName(),
                     GetDataNodes4GetResponse.getDefaultInstance());
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(HeartbeatRequest.class.getName(),
+                    HeartbeatRequest.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(HeartbeatResponse.class.getName(),
                     HeartbeatResponse.getDefaultInstance());
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(ListRequest.class.getName(),
+                    ListRequest.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(ListResponse.class.getName(),
                     ListResponse.getDefaultInstance());
-            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(MkDirRequest.class.getName(),
-                    MkDirResponse.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(MkdirRequest.class.getName(),
+                    MkdirRequest.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(MkdirResponse.class.getName(),
+                    MkdirResponse.getDefaultInstance());
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(MoveRequest.class.getName(),
+                    MoveRequest.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(MoveResponse.class.getName(),
                     MoveResponse.getDefaultInstance());
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(RemoveRequest.class.getName(),
+                    RemoveRequest.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(RemoveResponse.class.getName(),
                     RemoveResponse.getDefaultInstance());
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(RenameRequest.class.getName(),
+                    RenameRequest.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(RenameResponse.class.getName(),
                     RenameResponse.getDefaultInstance());
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(StatRequest.class.getName(),
+                    StatRequest.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(StatResponse.class.getName(),
                     StatResponse.getDefaultInstance());
 
             try {
@@ -72,8 +96,8 @@ public class MasterGrpcHelper {
                         HeartbeatResponse.getDefaultInstance());
                 registerRespInstance.invoke(null, ListRequest.class.getName(),
                         ListResponse.getDefaultInstance());
-                registerRespInstance.invoke(null, MkDirRequest.class.getName(),
-                        MkDirResponse.getDefaultInstance());
+                registerRespInstance.invoke(null, MkdirRequest.class.getName(),
+                        MkdirResponse.getDefaultInstance());
                 registerRespInstance.invoke(null, MoveRequest.class.getName(),
                         MoveResponse.getDefaultInstance());
                 registerRespInstance.invoke(null, RemoveRequest.class.getName(),

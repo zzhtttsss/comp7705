@@ -84,7 +84,7 @@ public class MasterRequestProcessor<T> implements RpcProcessor<T> {
                 operation = new ListOperation(UUID.randomUUID().toString(), listRequest.getPath());
                 break;
             case MKDIR:
-                MkDirRequest mkDirRequest = (MkDirRequest) request;
+                MkdirRequest mkDirRequest = (MkdirRequest) request;
                 operation = new MkdirOperation(UUID.randomUUID().toString(), mkDirRequest.getPath(),
                         mkDirRequest.getDirName());
                 break;
@@ -130,7 +130,7 @@ public class MasterRequestProcessor<T> implements RpcProcessor<T> {
 
     @Override
     public String interest() {
-        return CheckArgs4AddRequest.class.getName();
+        return this.reqClazz.getName();
     }
 
     public static byte[] serializeOperation(Operation operation) throws IOException {

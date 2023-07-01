@@ -5,14 +5,11 @@ import com.alipay.sofa.jraft.conf.Configuration;
 import com.alipay.sofa.jraft.entity.PeerId;
 import com.alipay.sofa.jraft.error.RemotingException;
 import com.alipay.sofa.jraft.option.CliOptions;
-import com.alipay.sofa.jraft.rpc.InvokeCallback;
 import com.alipay.sofa.jraft.rpc.impl.cli.CliClientServiceImpl;
 import org.comp7705.grpc.MasterGrpcHelper;
-import org.comp7705.protocol.definition.CheckArgs4AddRequest;
-import org.comp7705.protocol.definition.CheckArgs4AddResponse;
+import org.comp7705.protocol.definition.MkdirRequest;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 
 public class testSofaRaft {
 
@@ -24,7 +21,9 @@ public class testSofaRaft {
 //            System.exit(1);
 //        }
         final String groupId = "master";
-        final String confStr = "172.18.0.12:8081";
+//        final String confStr = "172.18.0.12:8081";
+        final String confStr = "127.0.0.1:8081";
+
         MasterGrpcHelper.initGRpc();
 
         final Configuration conf = new Configuration();
@@ -57,25 +56,26 @@ public class testSofaRaft {
     private static void checkArg4Add(final CliClientServiceImpl cliClientService, final PeerId leader,
                                      CountDownLatch latch) throws RemotingException,
             InterruptedException {
-        CheckArgs4AddRequest request = CheckArgs4AddRequest.newBuilder().setPath("/").setFileName("aa").setSize(1024 * 1024 * 128).build();
-        cliClientService.getRpcClient().invokeAsync(leader.getEndpoint(), request, new InvokeCallback() {
+//        CheckArgs4AddRequest request = CheckArgs4AddRequest.newBuilder().setPath("/").setFileName("aa").setSize(1024 * 1024 * 128).build();
+////        cliClientService.getRpcClient().invokeAsync(leader.getEndpoint(), request, (result, err) -> {
+////            if (err == null) {
+////                latch.countDown();
+////                CheckArgs4AddResponse response = (CheckArgs4AddResponse) result;
+////                System.out.println("incrementAndGet result:" + response.getFileNodeId());
+////            } else {
+////                err.printStackTrace();
+////                latch.countDown();
+////            }
+////        }, 10000);
+//        cliClientService.getRpcClient().invokeSync(leader.getEndpoint(), request, 10000);
+//        latch.countDown();
 
-            @Override
-            public void complete(Object result, Throwable err) {
-                if (err == null) {
-                    latch.countDown();
-                    CheckArgs4AddResponse response = (CheckArgs4AddResponse) result;
-                    System.out.println("incrementAndGet result:" + response.getFileNodeId());
-                } else {
-                    err.printStackTrace();
-                    latch.countDown();
-                }
-            }
+        MkdirRequest request = MkdirRequest.newBuilder()
+                .setPath("/")
+                .setDirName("a")
+                .build();
+        cliClientService.getRpcClient().invokeSync(leader.getEndpoint(), request, 10000);
+        latch.countDown();
 
-            @Override
-            public Executor executor() {
-                return null;
-            }
-        }, 10000);
     }
 }
