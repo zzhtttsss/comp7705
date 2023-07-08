@@ -2,9 +2,9 @@ package comp7705.chunkserver.entity;
 
 import com.sun.deploy.util.StringUtils;
 import comp7705.chunkserver.client.GrpcClient;
-import comp7705.chunkserver.common.Util;
+import org.comp7705.util.Util;
 import comp7705.chunkserver.exception.ChecksumException;
-import comp7705.chunkserver.interceptor.InterceptorConst;
+import org.comp7705.grpc.InterceptorConst;
 import comp7705.chunkserver.server.ChunkServer;
 import comp7705.chunkserver.service.FileService;
 import io.grpc.Channel;
@@ -45,8 +45,8 @@ public class PieceOfChunkStreamObserver implements StreamObserver<PieceOfChunk> 
     String addresses;
     String chunkSize;
     String checksums;
-    String[] checksumArray;
-    String[] addressArray;
+    List<String> checksumArray;
+    List<String> addressArray;
     Chunk chunk;
 
     boolean isFinishSending;
@@ -62,7 +62,8 @@ public class PieceOfChunkStreamObserver implements StreamObserver<PieceOfChunk> 
     // the idx of pieceOfChunk
     int ptr = -1;
 
-    public PieceOfChunkStreamObserver(ChunkServer chunkServer, StreamObserver<TransferChunkResponse> responseStreamObserver, FileService fileService) {
+    public PieceOfChunkStreamObserver(ChunkServer chunkServer, StreamObserver<TransferChunkResponse>
+            responseStreamObserver, FileService fileService) {
         this.chunkServer = chunkServer;
         this.fileService = fileService;
         this.responseStreamObserver = responseStreamObserver;
@@ -75,11 +76,11 @@ public class PieceOfChunkStreamObserver implements StreamObserver<PieceOfChunk> 
         // id_id
         this.chunkId = metadata.get(InterceptorConst.CHUNK_ID);
         this.addresses = metadata.get(InterceptorConst.ADDRESSES);
-        this.addressArray = addresses.split(",");
+        this.addressArray = Arrays.asList(addresses.split(","));
         // size = 64MB
         this.chunkSize = metadata.get(InterceptorConst.CHUNK_SIZE);
         this.checksums = metadata.get(InterceptorConst.CHECKSUM);
-        this.checksumArray = checksums.split(",");
+        this.checksumArray = Arrays.asList(checksums.split(","));
         this.chunk = new Chunk(chunkId);
 
         this.isStoreSuccess = true;
@@ -87,22 +88,24 @@ public class PieceOfChunkStreamObserver implements StreamObserver<PieceOfChunk> 
         this.storeChunkCount = new AtomicInteger(0);
         this.nextStreamLatch = new CountDownLatch(1);
 
-        nextStream = getNextStream(chunkId, addressArray, chunkSize, checksums);
+        nextStream = getNextStream(chunkId, addressArray.subList(1, addressArray.size()), chunkSize, checksums);
         StreamObserver<TransferChunkResponse> nextResponse = new StreamObserver<TransferChunkResponse>() {
             @Override
             public void onNext(TransferChunkResponse transferChunkResponse) {
+                log.info("Receive nextStream response");
                 failAddresses.addAll(transferChunkResponse.getFailAddsList());
             }
 
             @Override
             public void onError(Throwable throwable) {
                 log.error(throwable.getMessage());
-                failAddresses.addAll(new ArrayList<String>(Arrays.asList(addressArray)));
+                failAddresses.addAll(addressArray);
                 nextStreamLatch.countDown();
             }
 
             @Override
             public void onCompleted() {
+                log.info("NextStream complete");
                 nextStreamLatch.countDown();
             }
         };
@@ -115,9 +118,10 @@ public class PieceOfChunkStreamObserver implements StreamObserver<PieceOfChunk> 
                     if (!pieceOfChunksQueue.isEmpty()) {
                         storeChunkCount.incrementAndGet();
                         PieceOfChunk pieceOfChunk = pieceOfChunksQueue.poll();
-                        log.info("Store piece: " + pieceOfChunk.getPiece());
-                        fileService.storeChunk(pieceOfChunk, chunkId, Integer.parseInt(chunkSize), checksumArray[ans++]);
+//                        log.info("Store piece: " + pieceOfChunk.getPiece());
+                        fileService.storeChunk(pieceOfChunk, chunkId, Integer.parseInt(chunkSize), checksumArray.get(ans));
                         storeChunkCount.decrementAndGet();
+                        ans++;
                     }
                 }
             } catch (Exception e) {
@@ -133,6 +137,7 @@ public class PieceOfChunkStreamObserver implements StreamObserver<PieceOfChunk> 
                         log.info(chunkId + " stores successfully");
                         ChunkManager.completeChunk(chunk);
                         fileService.renameChunk(chunkId + "_incomplete", chunkId + "_complete");
+                        log.info("rename");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -149,9 +154,9 @@ public class PieceOfChunkStreamObserver implements StreamObserver<PieceOfChunk> 
     @Override
     public void onNext(PieceOfChunk pieceOfChunk) {
         ptr++;
-
+        log.info("Receive piece {}", ptr);
         // storeChunk
-        if (!Util.checksum(pieceOfChunk, checksumArray[ptr])) {
+        if (!Util.checksum(pieceOfChunk, checksumArray.get(ptr))) {
             log.warn("Checksum does not match: chunkId " + chunkId);
             failAddresses.add(System.getProperty("serverAddr"));
             isStoreSuccess = false;
@@ -159,14 +164,14 @@ public class PieceOfChunkStreamObserver implements StreamObserver<PieceOfChunk> 
             responseStreamObserver.onError(new ChecksumException());
         }
         // add to block queue to wait to be consume
-        log.info("BlockQueue offer: " + pieceOfChunk.getPiece());
+//        log.info("BlockQueue offer: " + pieceOfChunk.getPiece());
         pieceOfChunksQueue.offer(pieceOfChunk);
 
         // getNextStream -> send
         if (nextStream != null) {
             try {
                 // countDownLatch.await();
-                log.info("Call nextStream: " + addressArray[0]);
+                log.info("Call nextStream: " + addressArray.get(0));
                 nextRequest.onNext(pieceOfChunk);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -178,7 +183,7 @@ public class PieceOfChunkStreamObserver implements StreamObserver<PieceOfChunk> 
 
     @Override
     public void onError(Throwable throwable) {
-
+        log.error("fail to receive a chunk, {}", throwable.getMessage());
     }
 
     @Override
@@ -206,17 +211,18 @@ public class PieceOfChunkStreamObserver implements StreamObserver<PieceOfChunk> 
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+        log.info("Finish sending chunk: {}", chunkId);
         responseStreamObserver.onCompleted();
     }
 
-    private ChunkserverServiceGrpc.ChunkserverServiceStub getNextStream(String chunkId, String[] addresses, String chunkSize, String checksum) {
+    private ChunkserverServiceGrpc.ChunkserverServiceStub getNextStream(String chunkId, List<String> addresses,
+                                                                        String chunkSize, String checksum) {
 
-        if (addresses == null || addresses.length == 0 || addresses[0].equals("")) {
+        if (addresses == null || addresses.size() == 0 || addresses.get(0).equals("")) {
             return null;
         }
 
-        String[] nextAddress = addresses[0].split(":");
+        String[] nextAddress = addresses.get(0).split(":");
         String ip = nextAddress[0];
         int port = Integer.parseInt(nextAddress[1]);
 
@@ -224,7 +230,8 @@ public class PieceOfChunkStreamObserver implements StreamObserver<PieceOfChunk> 
         metadata.put(InterceptorConst.CHUNK_ID, chunkId);
         metadata.put(InterceptorConst.CHUNK_SIZE, chunkSize);
         metadata.put(InterceptorConst.CHECKSUM, checksum);
-        metadata.put(InterceptorConst.ADDRESSES, StringUtils.join(Arrays.asList(addresses).subList(1, addresses.length), ","));
+        metadata.put(InterceptorConst.ADDRESSES, StringUtils.join(addresses,
+                ","));
 
         Channel channel = GrpcClient.getChannel(ip, port);
         channel = ClientInterceptors.intercept(channel, MetadataUtils.newAttachHeadersInterceptor(metadata));

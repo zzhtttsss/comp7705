@@ -78,6 +78,10 @@ public class MasterGrpcHelper {
                     StatRequest.getDefaultInstance());
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(StatResponse.class.getName(),
                     StatResponse.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(DNRegisterRequest.class.getName(),
+                    DNRegisterRequest.getDefaultInstance());
+            RpcFactoryHelper.rpcFactory().registerProtobufSerializer(DNRegisterResponse.class.getName(),
+                    DNRegisterResponse.getDefaultInstance());
 
             try {
                 Class<?> clazz = Class.forName("com.alipay.sofa.jraft.rpc.impl.MarshallerHelper");
@@ -106,6 +110,8 @@ public class MasterGrpcHelper {
                         RenameResponse.getDefaultInstance());
                 registerRespInstance.invoke(null, StatRequest.class.getName(),
                         StatResponse.getDefaultInstance());
+                registerRespInstance.invoke(null, DNRegisterRequest.class.getName(),
+                        DNRegisterResponse.getDefaultInstance());
             } catch (Exception e) {
                 logger.error("Failed to init grpc server", e);
             }

@@ -2,11 +2,12 @@ package org.comp7705.entity;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
-public class ChunkTaskResult {
+public class ChunkTaskResult implements Serializable {
 
     private String chunkId;
     private List<String> failDataNodes;

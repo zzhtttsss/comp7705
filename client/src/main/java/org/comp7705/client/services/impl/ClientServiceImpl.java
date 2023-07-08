@@ -7,6 +7,7 @@ import org.comp7705.client.services.ChunkClient;
 import org.comp7705.client.services.ClientService;
 import org.comp7705.client.services.MasterClient;
 import org.comp7705.client.utils.*;
+import org.comp7705.constant.Const;
 import org.comp7705.protocol.definition.*;
 
 import java.io.*;
@@ -14,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 
 @Slf4j
@@ -27,8 +29,8 @@ public class ClientServiceImpl implements ClientService {
     public void mkdir(String path, String name) {
         try {
             masterClient.mkdir(path, name);
-        } catch (RemotingException e) {
-            log.error("fail to mkdir.", e);
+        } catch (RemotingException | TimeoutException e) {
+            log.error("Fail to mkdir.", e);
         } catch (InterruptedException ignored) {
 
         }
@@ -36,7 +38,13 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public void list(String path, boolean isLatest) {
-        masterClient.list(path, isLatest);
+        try {
+            masterClient.list(path, isLatest);
+        } catch (RemotingException | TimeoutException e) {
+            log.error("Fail to list.", e);
+        } catch (InterruptedException ignored) {
+
+        }
     }
 
     @Override
@@ -48,9 +56,12 @@ public class ClientServiceImpl implements ClientService {
             return;
         }
         CheckArgs4AddResponse checkArgs4AddResponse = null;
+        log.info("filename: {}", PathUtil.getCurrentName(des));
+        log.info("parent path: {}", PathUtil.getParentPath(des));
         try {
-            checkArgs4AddResponse = masterClient.checkArgs4Add(file.getName(), des, file.length());
-        } catch (RemotingException e) {
+            checkArgs4AddResponse = masterClient.checkArgs4Add(PathUtil.getCurrentName(des),
+                    PathUtil.getParentPath(des), file.length());
+        } catch (RemotingException | TimeoutException e) {
             log.error("fail to check args for add.", e);
         } catch (InterruptedException e) {
             return;
@@ -61,11 +72,12 @@ public class ClientServiceImpl implements ClientService {
         ProgressBar bar = ProgressBar.build(0, 100 / checkArgs4AddResponse.getChunkNum(), "Uploading");
         GetDataNodes4AddResponse getDataNodes4AddResponse = null;
         try {
-            getDataNodes4AddResponse = masterClient.getDataNodes4Add(checkArgs4AddResponse.getFileNodeId(), checkArgs4AddResponse.getChunkNum());
-        } catch (RemotingException e) {
-            throw new RuntimeException(e);
+            getDataNodes4AddResponse = masterClient.getDataNodes4Add(checkArgs4AddResponse.getFileNodeId(),
+                    checkArgs4AddResponse.getChunkNum());
+        } catch (RemotingException | TimeoutException e) {
+            log.error("Fail to get data nodes for add.", e);
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            return;
         }
         if (getDataNodes4AddResponse == null) {
             return;
@@ -77,18 +89,27 @@ public class ClientServiceImpl implements ClientService {
                 BufferedInputStream bin = new BufferedInputStream(in);
         ) {
             byte[] buffer = new byte[Const.ChunkSize];
+            int index = 0;
             for (int i = 0; i < checkArgs4AddResponse.getChunkNum(); i++) {
+                if (index + Const.ChunkSize > file.length()) {
+                    buffer = new byte[(int) (file.length() - index)];
+                }
                 int k = shuffleRandom.nextInt(getDataNodes4AddResponse.getDataNodeIdsCount());
-                List<String> dataNodeIds = ProtobufUtil.byteStrList2StrList(getDataNodes4AddResponse.getDataNodeIds(i).getItemsList().asByteStringList());
-                List<String> dataNodeAdds = ProtobufUtil.byteStrList2StrList(getDataNodes4AddResponse.getDataNodeAdds(i).getItemsList().asByteStringList());
-                Collections.swap(dataNodeAdds, 0, k);
-                Collections.swap(dataNodeIds, 0, k);
+                List<String> dataNodeIds = ProtobufUtil.byteStrList2StrList(
+                        getDataNodes4AddResponse.getDataNodeIds(i).getItemsList().asByteStringList());
+                List<String> dataNodeAdds = ProtobufUtil.byteStrList2StrList(
+                        getDataNodes4AddResponse.getDataNodeAdds(i).getItemsList().asByteStringList());
+//                Collections.swap(dataNodeAdds, 0, k);
+//                Collections.swap(dataNodeIds, 0, k);
                 String chunkId = checkArgs4AddResponse.getFileNodeId() + "_" + i;
                 int chunkSize = bin.read(buffer);
                 List<String> checkSums = StringUtil.getInstance().getCheckSums(buffer, Const.MB);
-                List<TransferChunkResponse> responses = chunkClient.addFile(chunkId, dataNodeAdds, chunkSize, checkSums, buffer);
-                resultList.add(ChunkAddResult.fromTransferChunkResponse(responses.get(responses.size() - 1), dataNodeAdds, chunkId));
+                List<TransferChunkResponse> responses = chunkClient.addFile(chunkId, dataNodeAdds,
+                        chunkSize, checkSums, buffer);
+                resultList.add(ChunkAddResult.fromTransferChunkResponse(responses.get(responses.size() - 1),
+                        dataNodeAdds, chunkId));
                 bar.step();
+                index += Const.ChunkSize;
             }
             int failNum = 0;
             ArrayList<ChunkInfo4Add> infos = new ArrayList<>();
@@ -104,10 +125,10 @@ public class ClientServiceImpl implements ClientService {
             Callback4AddResponse callBackInfo = null;
             try {
                 callBackInfo = masterClient.callBack4Add(checkArgs4AddResponse.getFileNodeId(), des, infos, failChunkIds);
-            } catch (RemotingException e) {
-                throw new RuntimeException(e);
+            } catch (RemotingException | TimeoutException e) {
+                log.error("Fail to callback for add.", e);
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                return;
             }
             if (callBackInfo == null) { return; }
             if (failNum > 0) {
@@ -125,15 +146,30 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public void get(String src, String des) {
-        CheckArgs4GetResponse getInfo = masterClient.checkArgs4Get(src);
+        CheckArgs4GetResponse getInfo = null;
+        try {
+            getInfo = masterClient.checkArgs4Get(src);
+        } catch (RemotingException | TimeoutException e) {
+            log.error("Fail to check args for get.", e);
+        } catch (InterruptedException e) {
+            return;
+        }
         if (getInfo == null) { return; }
         try (OutputStream out = Files.newOutputStream(Paths.get(des));
              BufferedOutputStream bout = new BufferedOutputStream(out)) {
             for (int i = 0; i < getInfo.getChunkNum(); i++){
-                GetDataNodes4GetResponse dataNodesResponse = masterClient.getDataNodes4Get(getInfo.getFileNodeId(), i);
+                GetDataNodes4GetResponse dataNodesResponse = null;
+                try {
+                    dataNodesResponse = masterClient.getDataNodes4Get(getInfo.getFileNodeId(), i);
+                } catch (RemotingException | TimeoutException e) {
+                    log.error("Fail to get data nodes for get.", e);
+                } catch (InterruptedException e) {
+                    return;
+                }
                 if (dataNodesResponse == null) { return; }
                 String chunkId = getInfo.getFileNodeId() + "_" + i;
-                List<String> nodeAddresses = ProtobufUtil.byteStrList2StrList(dataNodesResponse.getDataNodeAddrsList().asByteStringList());
+                List<String> nodeAddresses = ProtobufUtil.byteStrList2StrList(dataNodesResponse
+                        .getDataNodeAddrsList().asByteStringList());
                 boolean isChunkSuccess = false;
                 for (String nodeAddress: nodeAddresses) {
                     if (chunkClient.getFile(chunkId, nodeAddress, bout)) {
@@ -154,17 +190,43 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public void move(String src, String des) {
-        masterClient.move(src, des);
+        try {
+            masterClient.move(src, des);
+        } catch (RemotingException | TimeoutException e) {
+            log.error("Fail to move {} to {}", src, des, e);
+        } catch (InterruptedException ignored) {
+        }
     }
 
     @Override
-    public void remove(String src) { masterClient.remove(src); }
+    public void remove(String src) {
+        try {
+            masterClient.remove(src);
+        } catch (RemotingException | TimeoutException e) {
+            log.error("Fail to remove {}", src, e);
+        } catch (InterruptedException ignored) {
+        }
+    }
 
     @Override
-    public void rename(String src, String des) { masterClient.rename(src, des); }
+    public void rename(String src, String des) {
+        try {
+            masterClient.rename(src, des);
+        } catch (RemotingException | TimeoutException e) {
+            log.error("Fail to rename {} to {}", src, des, e);
+        } catch (InterruptedException ignored) {
+        }
+    }
 
     @Override
-    public void stat(String src, boolean isLatest) { masterClient.stat(src, isLatest); }
+    public void stat(String src, boolean isLatest) {
+        try {
+            masterClient.stat(src, isLatest);
+        } catch (RemotingException | TimeoutException e) {
+            log.error("Fail to get the state of {}", src, e);
+        } catch (InterruptedException ignored) {
+        }
+    }
 
     @Override
     public void close() {

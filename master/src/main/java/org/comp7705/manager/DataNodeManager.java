@@ -1,6 +1,7 @@
 package org.comp7705.manager;
 
 import org.comp7705.Master;
+import org.comp7705.MasterConfig;
 import org.comp7705.common.DataNodeStatus;
 import org.comp7705.common.DegradeStage;
 import org.comp7705.common.SendStatus;
@@ -74,7 +75,8 @@ public class DataNodeManager {
     }
 
     private void adjust4batch(DataNode dataNode) {
-        if (dataNodeHeap.size() < 3) {
+        // TODO
+        if (dataNodeHeap.size() < 1) {
             dataNodeHeap.add(dataNode);
             dataNode.addTempChunkSize();
         }
@@ -148,4 +150,24 @@ public class DataNodeManager {
         }
         return nextChunkInfos;
     }
+
+    public int calAvgUsage() {
+        int usedSum = 0;
+        int fullSum = 0;
+        if (dataNodeMap.size() == 0) {
+            return 0;
+        }
+        for (DataNode dataNode : dataNodeMap.values()) {
+            usedSum += dataNode.getUsedCapacity();
+            fullSum += dataNode.getFullCapacity();
+        }
+        return usedSum * 100 / fullSum;
+    }
+
+    public boolean isNeed2Expand(long usedCapacity, long fullCapacity) {
+        int avgUsage = calAvgUsage();
+        int currentUsage = DataNode.calUsage(usedCapacity, fullCapacity, 0);
+        return avgUsage - currentUsage > MasterConfig.MASTER_CONFIG.getExpandThreshold();
+    }
+
 }

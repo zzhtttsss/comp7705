@@ -1,4 +1,4 @@
-package comp7705.chunkserver.common;
+package org.comp7705.util;
 
 import org.comp7705.protocol.definition.PieceOfChunk;
 

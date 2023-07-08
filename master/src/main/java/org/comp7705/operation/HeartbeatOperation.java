@@ -13,7 +13,7 @@ import java.util.List;
 import static org.comp7705.Master.MASTER;
 
 @Data
-public class HeartbeatOperation implements Operation{
+public class HeartbeatOperation implements Operation {
     private static final Master master = MASTER;
 
     private String id;
@@ -47,7 +47,6 @@ public class HeartbeatOperation implements Operation{
         List<DataNode.ChunkSendInfo> nextChunkInfos =
                 master.getDataNodeManager().updateDataNode4Heartbeat(this);
         master.getChunkManager().updateChunk4Heartbeat(this);
-
         return HeartbeatResponse.newBuilder()
                 .addAllChunkInfos(convChunkInfo(nextChunkInfos))
                 .addAllDataNodeAddress(getDataNodeAddresses(nextChunkInfos))

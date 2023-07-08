@@ -26,7 +26,9 @@ public enum RequestType {
 
     STAT("StatRequest"),
 
-    HEARTBEAT("HeartbeatRequest");
+    HEARTBEAT("HeartbeatRequest"),
+
+    REGISTER("DNRegisterRequest");
 
     @Getter
     private final String name;

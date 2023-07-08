@@ -6,6 +6,7 @@ import com.alipay.sofa.jraft.entity.PeerId;
 import com.alipay.sofa.jraft.option.NodeOptions;
 import com.alipay.sofa.jraft.rpc.RaftRpcServerFactory;
 import com.alipay.sofa.jraft.rpc.RpcServer;
+import com.google.protobuf.Message;
 import org.apache.commons.io.FileUtils;
 import org.comp7705.grpc.MasterGrpcHelper;
 import org.comp7705.protocol.definition.*;
@@ -43,6 +44,7 @@ public class MasterServer {
         rpcServer.registerProcessor(new MasterRequestProcessor<>(RemoveRequest.class, this));
         rpcServer.registerProcessor(new MasterRequestProcessor<>(StatRequest.class, this));
         rpcServer.registerProcessor(new MasterRequestProcessor<>(HeartbeatRequest.class, this));
+        rpcServer.registerProcessor(new MasterRequestProcessor<>(DNRegisterRequest.class, this));
         // init state machine
         this.fsm = new MasterStateMachine();
         // set fsm to nodeOptions
@@ -75,12 +77,12 @@ public class MasterServer {
     /**
      * Redirect request to new leader
      */
-//    public <T> T redirect(T t) {
-//        final ValueResponse.Builder builder = ValueResponse.newBuilder().setSuccess(false);
+//    public <T extends Message> T redirect(T t) {
+//        final T.Builder builder = T.newBuilder(t);
 //        if (this.node != null) {
 //            final PeerId leader = this.node.getLeaderId();
 //            if (leader != null) {
-//                builder.setRedirect(leader.toString());
+//                builder.(leader.toString());
 //            }
 //        }
 //        return builder.build();

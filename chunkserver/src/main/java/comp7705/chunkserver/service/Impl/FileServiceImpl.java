@@ -1,7 +1,7 @@
 package comp7705.chunkserver.service.Impl;
 
-import comp7705.chunkserver.common.Const;
-import comp7705.chunkserver.common.Util;
+import org.comp7705.constant.Const;
+import org.comp7705.util.Util;
 import comp7705.chunkserver.exception.ChecksumException;
 import comp7705.chunkserver.exception.ListException;
 import comp7705.chunkserver.service.FileService;
@@ -43,7 +43,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public void storeChunk(PieceOfChunk pieceOfChunk, String chunkId, int chunkSize, String checksum) throws IOException {
-
+        log.info("Storing a piece");
         String chunkName = STORAGE_PATH + File.separator + chunkId + "_incomplete";
         String checksumFileName = CHECKSUM_PATH + File.separator + chunkId;
 
@@ -68,7 +68,6 @@ public class FileServiceImpl implements FileService {
         }
         checksumFile.writeInt(checksum.getBytes().length);
         checksumFile.write(checksum.getBytes());
-
     }
 
     @Override
@@ -83,19 +82,21 @@ public class FileServiceImpl implements FileService {
     public void renameChunk(String oldName, String newName) throws IOException {
 
         File file = new File(STORAGE_PATH + File.separator + oldName);
+
         File newFile = new File(STORAGE_PATH + File.separator + newName);
-        newFile.createNewFile();
-        FileInputStream fileInputStream = new FileInputStream(file);
-        FileOutputStream fileOutputStream = new FileOutputStream(newFile);
-        int by;
-        while ((by=fileInputStream.read())!=-1){
-            fileOutputStream.write(by);
-        }
-        fileInputStream.close();
-        fileOutputStream.close();
-        if (!file.delete()) {
-            log.warn(file.getName() + " deletion fails");
-        }
+        file.renameTo(newFile);
+//        newFile.createNewFile();
+//        FileInputStream fileInputStream = new FileInputStream(file);
+//        FileOutputStream fileOutputStream = new FileOutputStream(newFile);
+//        int by;
+//        while ((by=fileInputStream.read())!=-1){
+//            fileOutputStream.write(by);
+//        }
+//        fileInputStream.close();
+//        fileOutputStream.close();
+//        if (!file.delete()) {
+//            log.warn(file.getName() + " deletion fails");
+//        }
     }
 
     @Override

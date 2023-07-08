@@ -1,5 +1,6 @@
-package org.comp7705.client.utils;
+package org.comp7705.grpc;
 
+import org.comp7705.constant.Const;
 import io.grpc.Context;
 import io.grpc.Metadata;
 

@@ -25,14 +25,15 @@ public class DataNode {
     private long lastHeartbeatTime;
     private long tempChunkSize;
 
-    public DataNode(String id, DataNodeStatus status, String address, long fullCapacity) {
+    public DataNode(String id, DataNodeStatus status, String address, long fullCapacity, long usedCapacity,
+                    Set<String> chunks) {
         this.id = id;
         this.status = status;
         this.address = address;
-        this.chunks = new HashSet<>();
+        this.chunks = chunks;
         this.ioLoad = 0;
         this.fullCapacity = fullCapacity;
-        this.usedCapacity = 0;
+        this.usedCapacity = usedCapacity;
         this.futureSendChunks = new HashMap<>();
         this.lastHeartbeatTime = System.currentTimeMillis();
         this.tempChunkSize = 0;

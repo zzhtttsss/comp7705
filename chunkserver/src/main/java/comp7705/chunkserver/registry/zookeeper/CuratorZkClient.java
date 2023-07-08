@@ -1,6 +1,6 @@
 package comp7705.chunkserver.registry.zookeeper;
 
-import comp7705.chunkserver.common.Const;
+import org.comp7705.constant.Const;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.CuratorCache;

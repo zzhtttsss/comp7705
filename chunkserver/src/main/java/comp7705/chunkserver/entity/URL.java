@@ -1,6 +1,6 @@
 package comp7705.chunkserver.entity;
 
-import comp7705.chunkserver.common.Const;
+import org.comp7705.constant.Const;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;

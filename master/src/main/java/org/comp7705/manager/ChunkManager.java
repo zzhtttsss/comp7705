@@ -62,12 +62,19 @@ public class ChunkManager {
         for (ChunkTaskResult chunkTaskResult : chunkTaskResults) {
             if (chunkMap.containsKey(chunkTaskResult.getChunkId())) {
                 for (String id : chunkTaskResult.getSuccessDataNodes()) {
+                    if (chunkMap.get(chunkTaskResult.getChunkId()) == null) {
+                        log.error("chunk is null, chunkId: {}", chunkTaskResult.getChunkId());
+                    }
                     chunkMap.get(chunkTaskResult.getChunkId()).getDataNodes().add(id);
+                    chunkMap.get(chunkTaskResult.getChunkId()).getPendingDataNodes().remove(id);
+
                 }
-                for (String ignored : chunkTaskResult.getFailDataNodes()) {
+                for (String id : chunkTaskResult.getFailDataNodes()) {
                     pendingChunkQueue.add(chunkTaskResult.getChunkId());
+                    chunkMap.get(chunkTaskResult.getChunkId()).getPendingDataNodes().remove(id);
                 }
             }
+
         }
     }
 

@@ -2,9 +2,9 @@ package comp7705.chunkserver.test;
 
 import com.google.protobuf.ByteString;
 import comp7705.chunkserver.client.GrpcClient;
-import comp7705.chunkserver.common.Const;
-import comp7705.chunkserver.common.Util;
-import comp7705.chunkserver.interceptor.InterceptorConst;
+import org.comp7705.constant.Const;
+import org.comp7705.util.Util;
+import org.comp7705.grpc.InterceptorConst;
 import io.grpc.*;
 import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;

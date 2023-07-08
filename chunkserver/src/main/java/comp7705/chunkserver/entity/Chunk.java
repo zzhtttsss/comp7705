@@ -1,5 +1,6 @@
 package comp7705.chunkserver.entity;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,8 +11,7 @@ import java.time.LocalDateTime;
  * @Date 01/05/2023
  */
 
-@Setter
-@Getter
+@Data
 public class Chunk {
 
     private String id;
@@ -22,7 +22,7 @@ public class Chunk {
 
     private boolean isComplete;
 
-    private LocalDateTime addTime;
+    private long addTime;
 
     // chunkId = fileId_index
     public Chunk(String id) {
@@ -31,10 +31,10 @@ public class Chunk {
         this.fileId = strings[0];
         this.index = strings[1];
         this.isComplete = false;
-        this.addTime = LocalDateTime.now();
+        this.addTime = System.currentTimeMillis();
     }
 
-    public Chunk(String id, LocalDateTime modTime) {
+    public Chunk(String id, long modTime) {
         this.id = id;
         String[] strings = id.split("_");
         this.fileId = strings[0];
@@ -48,7 +48,7 @@ public class Chunk {
         this.fileId = fileId;
         this.index = index;
         this.isComplete = false;
-        this.addTime = LocalDateTime.now();
+        this.addTime = System.currentTimeMillis();
     }
 
 }

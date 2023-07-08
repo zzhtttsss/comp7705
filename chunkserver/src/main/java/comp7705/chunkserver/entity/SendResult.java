@@ -2,6 +2,7 @@ package comp7705.chunkserver.entity;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.comp7705.protocol.definition.SendType;
 
 /**
  * @author Reuze
@@ -13,9 +14,9 @@ public class SendResult {
 
     private String chunkId;
     private String address;
-    private int sendType;
+    private SendType sendType;
 
-    public SendResult(String chunkId, String address, int sendType) {
+    public SendResult(String chunkId, String address, SendType sendType) {
         this.chunkId = chunkId;
         this.address = address;
         this.sendType = sendType;

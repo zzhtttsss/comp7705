@@ -13,6 +13,8 @@ public class MasterConfig {
 
     private int masterGrpcPort;
 
+    private int expandThreshold;
+
     static {
         MASTER_CONFIG = new MasterConfig();
     }
@@ -29,7 +31,7 @@ public class MasterConfig {
             throw new RuntimeException(e);
         }
         masterGrpcPort = Integer.parseInt(properties.getProperty("master.grpc.port"));
-
+        expandThreshold = Integer.parseInt(properties.getProperty("master.expand.threshold"));
 
     }
 }

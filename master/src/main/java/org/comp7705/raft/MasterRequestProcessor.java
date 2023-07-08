@@ -5,6 +5,7 @@ import com.alipay.sofa.jraft.rpc.RpcContext;
 import com.alipay.sofa.jraft.rpc.RpcProcessor;
 import com.alipay.sofa.jraft.util.Requires;
 import lombok.Getter;
+import org.comp7705.Master;
 import org.comp7705.MasterServer;
 import org.comp7705.common.AddStage;
 import org.comp7705.common.GetStage;
@@ -33,6 +34,8 @@ public class MasterRequestProcessor<T> implements RpcProcessor<T> {
     private final Class<T> reqClazz;
 
     private final MasterServer masterServer;
+
+    private final Master master = Master.MASTER;
 
     public MasterRequestProcessor(Class<T> reqClazz, MasterServer masterServer) {
         this.reqClazz = reqClazz;
@@ -64,10 +67,10 @@ public class MasterRequestProcessor<T> implements RpcProcessor<T> {
                 operation = new AddOperation(UUID.randomUUID().toString(), callback4AddRequest.getFileNodeId(),
                         callback4AddRequest.getFilePath(), callback4AddRequest.getInfosList()
                         .stream()
-                        .map(e -> new ChunkTaskResult(e.getChunkId(), e.getFailNodeList(), e.getSuccessNodeList(),
-                                0))
-                        .collect(Collectors.toList()),
-                        callback4AddRequest.getFailChunkIdsList(), AddStage.APPLY_RESULT);
+                        .map(e -> new ChunkTaskResult(e.getChunkId(), new ArrayList<>(e.getFailNodeList()),
+                                new ArrayList<>(e.getSuccessNodeList()), 0))
+                        .collect(Collectors.toList()), new ArrayList<>(callback4AddRequest.getFailChunkIdsList()),
+                        AddStage.APPLY_RESULT);
                 break;
             case CHECK_ARGS_4_GET:
                 CheckArgs4GetRequest checkArgs4GetRequest = (CheckArgs4GetRequest) request;
@@ -109,11 +112,20 @@ public class MasterRequestProcessor<T> implements RpcProcessor<T> {
             case HEARTBEAT:
                 HeartbeatRequest heartbeatRequest = (HeartbeatRequest) request;
                 operation = new HeartbeatOperation(UUID.randomUUID().toString(), heartbeatRequest.getId(),
-                        heartbeatRequest.getChunkIdList(), heartbeatRequest.getIOLoad(),
+                        new ArrayList<>(heartbeatRequest.getChunkIdList()), heartbeatRequest.getIOLoad(),
                         heartbeatRequest.getFullCapacity(), heartbeatRequest.getUsedCapacity(),
                         conv2ChunkSendInfo(heartbeatRequest.getSuccessChunkInfosList()),
                         conv2ChunkSendInfo(heartbeatRequest.getFailChunkInfosList()),
-                        heartbeatRequest.getInvalidChunksList(), heartbeatRequest.getIsReady());
+                        new ArrayList<>(heartbeatRequest.getInvalidChunksList()), heartbeatRequest.getIsReady());
+                break;
+            case REGISTER:
+                DNRegisterRequest registerRequest = (DNRegisterRequest) request;
+                operation = new RegisterOperation(UUID.randomUUID().toString(), UUID.randomUUID().toString(),
+                        rpcCtx.getRemoteAddress().substring(1).split(":")[0] + ":" + registerRequest.getPort(),
+                        new ArrayList<>(registerRequest.getChunkIdsList()), registerRequest.getFullCapacity(),
+                        registerRequest.getUsedCapacity(), master.getDataNodeManager()
+                        .isNeed2Expand(registerRequest.getUsedCapacity(), registerRequest.getFullCapacity()));
+                logger.info("Register operation: {}", operation);
                 break;
             default:
                 return;

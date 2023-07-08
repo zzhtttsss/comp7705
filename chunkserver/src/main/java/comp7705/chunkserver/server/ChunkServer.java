@@ -1,34 +1,31 @@
 package comp7705.chunkserver.server;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.protobuf.ByteString;
-import comp7705.chunkserver.client.GrpcClient;
-import comp7705.chunkserver.common.Const;
+import com.alipay.sofa.jraft.RouteTable;
+import com.alipay.sofa.jraft.conf.Configuration;
+import com.alipay.sofa.jraft.entity.PeerId;
+import com.alipay.sofa.jraft.error.RemotingException;
+import com.alipay.sofa.jraft.option.CliOptions;
+import com.alipay.sofa.jraft.rpc.impl.cli.CliClientServiceImpl;
 import comp7705.chunkserver.entity.*;
 import comp7705.chunkserver.handler.FileHandler;
-import comp7705.chunkserver.interceptor.InterceptorConst;
 import comp7705.chunkserver.interceptor.MetadataInterceptor;
 import comp7705.chunkserver.registry.Registry;
-import comp7705.chunkserver.registry.zookeeper.ZkRegistry;
+import comp7705.chunkserver.service.ClearChunkService;
+import comp7705.chunkserver.service.ConsumeSendingTasksService;
 import comp7705.chunkserver.service.FileService;
+import comp7705.chunkserver.service.HeartbeatService;
 import comp7705.chunkserver.service.Impl.FileServiceImpl;
 import io.grpc.*;
-import io.grpc.stub.MetadataUtils;
-import io.grpc.stub.StreamObserver;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.comp7705.grpc.MasterGrpcHelper;
 import org.comp7705.protocol.definition.*;
-import org.comp7705.protocol.service.ChunkserverServiceGrpc;
 import org.comp7705.protocol.service.MasterServiceGrpc;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -45,28 +42,41 @@ public class ChunkServer {
     private Server server;
     private InetAddress address;
     private int port;
+    private static final int TIME_OUT = 50000;
 
-    private FileService fileService;
+    private DataNode dataNode;
 
-    private ScheduledExecutorService scheduledExecutorService;
-    private ScheduledFuture heartbeatScheduledFuture;
+
+
+    private String groupId = "master";
+    private String masterAddress = "localhost";
+    private int masterLeaderPort = 8081;
+    private final CliClientServiceImpl cliClientService;
+
+    private final FileService fileService;
+
+    private final ScheduledExecutorService scheduledExecutorService;
 
     private ManagedChannel channel;
     private MasterServiceGrpc.MasterServiceFutureStub masterServiceFutureStub;
     private String masterHost;
     private int masterPort;
 
-    private Map<PendingChunk, SendResult> successSendResult;
-    private Map<PendingChunk, SendResult> failSendResult;
+    private final Map<PendingChunk, SendResult> successSendResult;
+    private final Map<PendingChunk, SendResult> failSendResult;
 
-    private BlockingQueue<PendingChunk> pendingChunkBlockingQueue;
-    private Thread consumeSendingTasksThread;
-    private AtomicInteger sendingTaskCount;
+    private final BlockingQueue<PendingChunk> pendingChunkBlockingQueue;
+    private final AtomicInteger sendingTaskCount;
 
-    private BlockingQueue<PendingChunk> removedBlockingQueue;
-    private Thread removeChunkThread;
+    private final BlockingQueue<PendingChunk> removedBlockingQueue;
 
     private Registry registry;
+
+    private final HeartbeatService heartbeatService;
+
+    private final ConsumeSendingTasksService consumeSendingTasksService;
+
+    private final ClearChunkService clearChunkService;
 
     public ChunkServer(int port) {
         try {
@@ -83,14 +93,36 @@ public class ChunkServer {
         this.successSendResult = new ConcurrentHashMap<>();
         this.failSendResult = new ConcurrentHashMap<>();
 
-        this.registry = new ZkRegistry();
-        while (true) {
-            URL url = registry.lookup("master");
-            if (url != null) {
-                this.masterHost = url.getIp();
-                this.masterPort = url.getPort();
-                break;
+//        this.registry = new ZkRegistry();
+//        while (true) {
+//            URL url = registry.lookup("master");
+//            if (url != null) {
+//                this.masterHost = url.getIp();
+//                this.masterPort = url.getPort();
+//                break;
+//            }
+//        }
+
+        final String groupId = "master";
+        final String confStr = "127.0.0.1:8081";
+        MasterGrpcHelper.initGRpc();
+
+        final Configuration conf = new Configuration();
+        if (!conf.parse(confStr)) {
+            throw new IllegalArgumentException("Fail to parse conf:" + confStr);
+        }
+
+        RouteTable.getInstance().updateConfiguration(groupId, conf);
+
+        cliClientService = new CliClientServiceImpl();
+        cliClientService.init(new CliOptions());
+
+        try {
+            if (!RouteTable.getInstance().refreshLeader(cliClientService, groupId, 1000).isOk()) {
+                throw new IllegalStateException("Refresh leader failed");
             }
+        } catch (InterruptedException | TimeoutException e) {
+            throw new RuntimeException(e);
         }
 
 //        this.masterHost = "127.0.0.1";
@@ -99,43 +131,22 @@ public class ChunkServer {
         this.fileService = new FileServiceImpl();
         this.scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
-        this.channel = ManagedChannelBuilder.forAddress(this.masterHost, this.masterPort)
-                .usePlaintext()
-                .build();
-        this.masterServiceFutureStub = MasterServiceGrpc.newFutureStub(this.channel);
+//        this.channel = ManagedChannelBuilder.forAddress(this.masterHost, this.masterPort)
+//                .usePlaintext()
+//                .build();
+//        this.masterServiceFutureStub = MasterServiceGrpc.newFutureStub(this.channel);
 
         this.removedBlockingQueue = new LinkedBlockingQueue<>();
-        this.removeChunkThread = new Thread(() -> {
-            while (true) {
-                SendResult sendResult;
-                if (!removedBlockingQueue.isEmpty()) {
-                    PendingChunk pendingChunk = removedBlockingQueue.poll();
-                    sendResult = new SendResult(pendingChunk.getChunkId(), pendingChunk.getAddress(), pendingChunk.getSendType());
-                    try {
-                        fileService.deleteChunk(pendingChunk.getChunkId());
-                        successSendResult.put(pendingChunk, sendResult);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        failSendResult.put(pendingChunk, sendResult);
-                    }
-                }
-            }
-        });
 
         this.pendingChunkBlockingQueue = new LinkedBlockingQueue<>();
         this.sendingTaskCount = new AtomicInteger(0);
-        this.consumeSendingTasksThread = new Thread(() -> {
-            ThreadPoolExecutor executor = new ThreadPoolExecutor(8, 8, 5, TimeUnit.SECONDS, new LinkedBlockingQueue<>());
-            while (true) {
-                if (!pendingChunkBlockingQueue.isEmpty()) {
-                    sendingTaskCount.incrementAndGet();
-                    executor.execute(new ConsumeSingleChunk(pendingChunkBlockingQueue.poll()));
-                }
-            }
-        });
+
+        this.heartbeatService = new HeartbeatService(this);
+        this.consumeSendingTasksService = new ConsumeSendingTasksService(this);
+        this.clearChunkService = new ClearChunkService(this);
     }
 
-    public void start() throws IOException {
+    public void start() throws IOException, InterruptedException, TimeoutException, RemotingException {
         server = ServerBuilder.forPort(port)
                 .intercept(new MetadataInterceptor())
                 .addService(new FileHandler(this, this.fileService))
@@ -158,10 +169,9 @@ public class ChunkServer {
 
         // todo: check register status, only register complete chunk, if fails, retry
         register();
-        consumeSendingTasksThread.start();
-        removeChunkThread.start();
-        resetHeartbeatTimer();
-
+        heartbeatService.start();
+        consumeSendingTasksService.start();
+        clearChunkService.start();
     }
 
     private void stop() throws InterruptedException {
@@ -177,15 +187,8 @@ public class ChunkServer {
     }
 
 
-    private void resetHeartbeatTimer() {
-        if (heartbeatScheduledFuture != null && !heartbeatScheduledFuture.isDone()) {
-            heartbeatScheduledFuture.cancel(true);
-        }
-        heartbeatScheduledFuture = scheduledExecutorService.scheduleAtFixedRate(this::startHeartbeat, 0,
-                5, TimeUnit.SECONDS);
-    }
 
-    private void register() {
+    private void register() throws InterruptedException, TimeoutException, RemotingException {
 
         List<String> chunkIds = loadChunk();
         long fullCapacity = fileService.getFullCapacity();
@@ -193,43 +196,17 @@ public class ChunkServer {
 
         DNRegisterRequest.Builder requestBuilder = DNRegisterRequest.newBuilder();
         requestBuilder.addAllChunkIds(chunkIds);
-        DNRegisterRequest request = requestBuilder.setFullCapacity(fullCapacity)
+        DNRegisterRequest request = requestBuilder
+                .setFullCapacity(fullCapacity)
                 .setUsedCapacity(usedCapacity)
+                .setPort(this.port)
                 .build();
 
-        // todo: handle response
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        StreamObserver<DNRegisterResponse> registerResponseStreamObserver = new StreamObserver<DNRegisterResponse>() {
-            @Override
-            public void onNext(DNRegisterResponse registerResponse) {
-                System.out.println("DNRegisterResponse: " + registerResponse.getId());
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                log.error(throwable.getMessage());
-                try {
-                    Thread.sleep(3000);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                // todo: improve retry to connect to master
-                // register();
-                // System.out.println("Register retry ... ");
-                // countDownLatch.countDown();
-            }
-
-            @Override
-            public void onCompleted() {
-                countDownLatch.countDown();
-            }
-        };
-        MasterServiceGrpc.newStub(this.channel).register(request, registerResponseStreamObserver);
-        try {
-            countDownLatch.await();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        PeerId leader = refreshAndGetLeader();
+        DNRegisterResponse response = (DNRegisterResponse) cliClientService.getRpcClient()
+                .invokeSync(leader.getEndpoint(), request, TIME_OUT);
+        this.dataNode = new DataNode(response.getId(), response.getPendingCount(),
+                response.getPendingCount() == 0, 0);
     }
 
     private List<String> loadChunk() {
@@ -239,15 +216,14 @@ public class ChunkServer {
             if (file.getName().endsWith("_complete")) {
                 String[] nameArray = file.getName().split("_");
                 names.add(nameArray[0] + "_" + nameArray[1]);
-                Chunk chunk = new Chunk(file.getName(), LocalDateTime.ofInstant(Instant.ofEpochMilli(file.lastModified()), ZoneId.systemDefault()));
+                Chunk chunk = new Chunk(file.getName(), file.lastModified());
                 ChunkManager.completeChunk(chunk);
             }
         }
         return names;
     }
 
-    private void startHeartbeat() {
-        String id = this.address.getHostAddress();
+    public void startHeartbeat() throws InterruptedException, TimeoutException, RemotingException {
         List<String> chunkIds = ChunkManager.getAllChunkIds();
         List<ChunkInfo> successChunkInfos = getSendResult(successSendResult);
         List<ChunkInfo> failChunkInfos = getSendResult(failSendResult);
@@ -261,23 +237,22 @@ public class ChunkServer {
         heartbeatRequestBuilder.addAllSuccessChunkInfos(successChunkInfos);
         heartbeatRequestBuilder.addAllFailChunkInfos(failChunkInfos);
 
-        HeartbeatRequest request = heartbeatRequestBuilder.setId(id)
+        HeartbeatRequest request = heartbeatRequestBuilder.setId(dataNode.getId())
                 .setIOLoad(ioLoad)
                 .setFullCapacity(fullCapacity)
                 .setUsedCapacity(usedCapacity)
                 .setIsReady(true)
                 .build();
 
-        ListenableFuture<HeartbeatResponse> responseFuture = this.masterServiceFutureStub.heartbeat(request);
+        PeerId leader = refreshAndGetLeader();
         log.info("Start heartbeat to master ...");
         log.info(request.toString());
+        HeartbeatResponse response = (HeartbeatResponse) cliClientService.getRpcClient()
+                .invokeSync(leader.getEndpoint(), request, TIME_OUT);
 
         try {
-            HeartbeatResponse response = responseFuture.get();
-
             log.info("Receive heartbeat from master ...");
             log.info(response.toString());
-
             for (ChunkInfo chunkInfo : response.getChunkInfosList()) {
                 PendingChunk pendingChunk = new PendingChunk(chunkInfo.getChunkId(), chunkInfo.getSendType(), chunkInfo.getDataNodeId());
                 pendingChunkBlockingQueue.offer(pendingChunk);
@@ -297,7 +272,7 @@ public class ChunkServer {
             PendingChunk pendingChunk = entry.getKey();
             SendResult sendResult = entry.getValue();
             String address = sendResult.getAddress();
-            int sendType = sendResult.getSendType();
+            SendType sendType = sendResult.getSendType();
             ChunkInfo.Builder builder = ChunkInfo.newBuilder();
             builder.setChunkId(pendingChunk.getChunkId())
                     .setDataNodeId(address)
@@ -308,101 +283,12 @@ public class ChunkServer {
         return chunkInfos;
     }
 
-    private class ConsumeSingleChunk implements Runnable {
 
-        private PendingChunk pendingChunk;
-
-        public ConsumeSingleChunk(PendingChunk pendingChunk) {
-            this.pendingChunk = pendingChunk;
+    public PeerId refreshAndGetLeader() throws InterruptedException, TimeoutException {
+        if (!RouteTable.getInstance().refreshLeader(cliClientService, groupId, 5000).isOk()) {
+            throw new IllegalStateException("Refresh leader failed");
         }
+        return RouteTable.getInstance().selectLeader(groupId);
 
-        @Override
-        public void run() {
-            if (pendingChunk.getSendType() == Const.DeleteSendType) {
-                removedBlockingQueue.offer(pendingChunk);
-                return;
-            }
-
-            String[] nextAddress = pendingChunk.getAddress().split(":");
-            String ip = nextAddress[0];
-            int port = Integer.parseInt(nextAddress[1]);
-
-            String chunkId = pendingChunk.getChunkId();
-            int chunkSize = fileService.getChunkSize(chunkId);
-            SendResult sendResult = new SendResult(chunkId, pendingChunk.getAddress(), pendingChunk.getSendType());
-            final Boolean[] isSuccess = {true};
-            List<String> checksums = new ArrayList<>();
-            try {
-                checksums = fileService.getChecksum(chunkId);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            Metadata metadata = new Metadata();
-            metadata.put(InterceptorConst.CHUNK_ID, chunkId);
-            metadata.put(InterceptorConst.CHUNK_SIZE, String.valueOf(chunkSize));
-            metadata.put(InterceptorConst.CHECKSUM, String.join(",", checksums));
-            metadata.put(InterceptorConst.ADDRESSES, "");
-
-            Channel channel = GrpcClient.getChannel(ip, port);
-            channel = ClientInterceptors.intercept(channel, MetadataUtils.newAttachHeadersInterceptor(metadata));
-            ChunkserverServiceGrpc.ChunkserverServiceStub serviceStub = ChunkserverServiceGrpc.newStub(channel);
-
-            CountDownLatch countDownLatch = new CountDownLatch(1);
-            StreamObserver<TransferChunkResponse> reply = new StreamObserver<TransferChunkResponse>() {
-                @Override
-                public void onNext(TransferChunkResponse transferChunkResponse) {
-                    log.info("Reply: " + transferChunkResponse.getChunkId());
-                    log.info("failAddr: " + transferChunkResponse.getFailAddsList());
-                }
-
-                @Override
-                public void onError(Throwable throwable) {
-                    isSuccess[0] = false;
-                    countDownLatch.countDown();
-                }
-
-                @Override
-                public void onCompleted() {
-                    countDownLatch.countDown();
-                }
-            };
-
-            StreamObserver<PieceOfChunk> requestObserver = serviceStub.transferChunk(reply);
-            try {
-                byte[] chunk = fileService.readChunk(chunkId);
-                int len = chunk.length;
-                int ptr = 0;
-                byte[] pieceByte;
-                while (ptr + Const.PieceSize < len) {
-                    pieceByte = Arrays.copyOfRange(chunk, ptr, ptr + Const.PieceSize);
-                    PieceOfChunk pieceOfChunk = PieceOfChunk.newBuilder()
-                            .setPiece(ByteString.copyFrom(pieceByte))
-                            .build();
-                    requestObserver.onNext(pieceOfChunk);
-                    ptr += Const.PieceSize;
-                }
-                pieceByte = Arrays.copyOfRange(chunk, ptr, len);
-                PieceOfChunk pieceOfChunk = PieceOfChunk.newBuilder()
-                        .setPiece(ByteString.copyFrom(pieceByte))
-                        .build();
-                requestObserver.onNext(pieceOfChunk);
-                requestObserver.onCompleted();
-
-                countDownLatch.await();
-            } catch (Exception e) {
-                e.printStackTrace();
-                isSuccess[0] = false;
-            }
-
-            if (!isSuccess[0]) {
-                failSendResult.put(pendingChunk, sendResult);
-            } else if (pendingChunk.getSendType() == Const.MoveSendType) {
-                removedBlockingQueue.offer(pendingChunk);
-            } else {
-                successSendResult.put(pendingChunk, sendResult);
-            }
-
-        }
     }
 }

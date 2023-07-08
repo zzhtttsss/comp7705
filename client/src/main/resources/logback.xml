@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <configuration scan="true" scanPeriod="60 seconds" debug="false">
-    <contextName>master</contextName>
+    <contextName>client</contextName>
     <property name="LOG_HOME" value="logs/app.log"/>
 
     <property name="CONSOLE_LOG_PATTERN"
@@ -23,7 +23,7 @@
             <level>info</level>
         </filter>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/master.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>logs/client.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
@@ -40,7 +40,7 @@
             <charset>UTF-8</charset>
             <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] %-5level %logger{36} : %msg%n</pattern>
         </encoder>
-        <file>logs/masterError.log</file>
+        <file>logs/clientError.log</file>
     </appender>
 
     <root level="info">

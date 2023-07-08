@@ -1,6 +1,6 @@
 package comp7705.chunkserver.registry.zookeeper;
 
-import comp7705.chunkserver.common.Const;
+import org.comp7705.constant.Const;
 import comp7705.chunkserver.entity.URL;
 import comp7705.chunkserver.registry.AbstractRegistry;
 

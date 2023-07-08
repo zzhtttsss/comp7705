@@ -14,7 +14,7 @@ import org.comp7705.protocol.service.ChunkserverServiceGrpc;
 
 import java.util.Arrays;
 
-import static comp7705.chunkserver.common.Const.PieceSize;
+import static org.comp7705.constant.Const.PieceSize;
 
 /**
  * @author Reuze

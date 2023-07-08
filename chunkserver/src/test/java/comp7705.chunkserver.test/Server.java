@@ -1,9 +1,11 @@
 package comp7705.chunkserver.test;
 
+import com.alipay.sofa.jraft.error.RemotingException;
 import comp7705.chunkserver.server.ChunkServer;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author Reuze
@@ -12,21 +14,21 @@ import java.io.IOException;
 public class Server {
 
     @Test
-    public void start1() throws IOException, InterruptedException {
+    public void start1() throws IOException, InterruptedException, RemotingException, TimeoutException {
         ChunkServer chunkServer = new ChunkServer(10051);
         chunkServer.start();
         chunkServer.blockUntilShutdown();
     }
 
     @Test
-    public void start2() throws IOException, InterruptedException {
+    public void start2() throws IOException, InterruptedException, RemotingException, TimeoutException {
         ChunkServer chunkServer = new ChunkServer(10052);
         chunkServer.start();
         chunkServer.blockUntilShutdown();
     }
 
     @Test
-    public void start3() throws IOException, InterruptedException {
+    public void start3() throws IOException, InterruptedException, RemotingException, TimeoutException {
         ChunkServer chunkServer = new ChunkServer(10053);
         chunkServer.start();
         chunkServer.blockUntilShutdown();

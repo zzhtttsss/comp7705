@@ -1,6 +1,5 @@
 package comp7705.chunkserver.test;
 
-import comp7705.chunkserver.common.Const;
 import comp7705.chunkserver.interceptor.MetadataInterceptor;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -106,7 +105,7 @@ public class Master {
             log.info(request.toString());
             ChunkInfo chunkInfo = ChunkInfo.newBuilder().setChunkId("1_1")
                     .setDataNodeId("127.0.0.1:10052")
-                    .setSendType(Const.MoveSendType)
+                    .setSendType(SendType.MOVE)
                     .build();
             HeartbeatResponse response = HeartbeatResponse.newBuilder().addChunkInfos(chunkInfo)
                     .addDataNodeAddress("127.0.0.1:10051")

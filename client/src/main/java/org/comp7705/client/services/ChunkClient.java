@@ -6,9 +6,9 @@ import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
-import org.comp7705.client.utils.Const;
 import org.comp7705.client.utils.DebugUtil;
-import org.comp7705.client.utils.InterceptorConst;
+import org.comp7705.constant.Const;
+import org.comp7705.grpc.InterceptorConst;
 import org.comp7705.protocol.definition.Piece;
 import org.comp7705.protocol.definition.PieceOfChunk;
 import org.comp7705.protocol.definition.SetupStream2DataNodeRequest;
@@ -34,9 +34,11 @@ public class ChunkClient {
         channelMap = new ConcurrentHashMap<>();
     }
 
-    public ChunkserverServiceGrpc.ChunkserverServiceStub getAddStub(String chunkId, List<String> nodeAddresses, int chunkSize, List<String> checkSums) {
+    public ChunkserverServiceGrpc.ChunkserverServiceStub getAddStub(String chunkId, List<String> nodeAddresses,
+                                                                    int chunkSize, List<String> checkSums) {
         String nextAddress = nodeAddresses.get(0);
-        channelMap.computeIfAbsent(nextAddress, key -> ManagedChannelBuilder.forAddress(nextAddress, port)
+        channelMap.computeIfAbsent(nextAddress, key -> ManagedChannelBuilder.forAddress(nextAddress.split(":")[0],
+                        Integer.parseInt(nextAddress.split(":")[1]))
                 .usePlaintext()
                 .build());
         ManagedChannel channel = channelMap.get(nextAddress);
@@ -51,14 +53,16 @@ public class ChunkClient {
     }
 
     public ChunkserverServiceGrpc.ChunkserverServiceStub getStub(String nodeAddress) {
-        channelMap.computeIfAbsent(nodeAddress, key -> ManagedChannelBuilder.forAddress(nodeAddress, port)
+        channelMap.computeIfAbsent(nodeAddress, key -> ManagedChannelBuilder.forAddress(nodeAddress.split(":")[0],
+                Integer.parseInt(nodeAddress.split(":")[1]))
                 .usePlaintext()
                 .build());
         ManagedChannel channel = channelMap.get(nodeAddress);
         return ChunkserverServiceGrpc.newStub(channel);
     }
 
-    public List<TransferChunkResponse> addFile(String chunkId, List<String> nodeAddresses, int chunkSize, List<String> checkSums, byte[] buffer) {
+    public List<TransferChunkResponse> addFile(String chunkId, List<String> nodeAddresses, int chunkSize,
+                                               List<String> checkSums, byte[] buffer) {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         PieceOfChunk.Builder builder = PieceOfChunk.newBuilder();
         List<PieceOfChunk> pieceOfChunks = new ArrayList<>();
