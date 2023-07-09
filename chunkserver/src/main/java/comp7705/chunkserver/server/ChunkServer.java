@@ -32,6 +32,8 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.comp7705.util.Util.getLocalHostExactAddress;
+
 /**
  * @author Reuze
  * @Date 01/05/2023
@@ -73,7 +75,7 @@ public class ChunkServer {
 
     public ChunkServer() {
         try {
-            this.address = InetAddress.getLocalHost();
+            this.address = getLocalHostExactAddress();
         } catch (Exception e) {
             e.printStackTrace();
         }

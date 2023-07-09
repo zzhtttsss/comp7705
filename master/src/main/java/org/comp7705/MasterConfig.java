@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
+import static org.comp7705.util.Util.getLocalHostExactAddress;
+
 @Data
 public class MasterConfig {
 
@@ -24,6 +26,8 @@ public class MasterConfig {
     private String masterGroupId;
 
     private String masterServerId;
+
+    private String masterServerPort;
 
     private String masterDataPath;
 
@@ -47,7 +51,8 @@ public class MasterConfig {
         masterGroupAddressesString = properties.getProperty("master.group.addresses");
         masterGroupAddresses = Arrays.asList(masterGroupAddressesString.split(","));
         masterGroupId = properties.getProperty("master.group.id");
-        masterServerId = properties.getProperty("master.server.id");
+        masterServerPort = properties.getProperty("master.server.port");
+        masterServerId = getLocalHostExactAddress().getHostAddress() + ":" + masterServerPort;
         masterDataPath = properties.getProperty("master.data.path");
     }
 }
