@@ -13,9 +13,7 @@ public class ChunkserverStartup {
 
     public static void main(String[] args) {
         log.info("Chunkserver started.");
-//        ChunkServer chunkServer = new ChunkServer(4567);
-        ChunkServer chunkServer = new ChunkServer(6789);
-//        ChunkServer chunkServer = new ChunkServer(4567);
+        ChunkServer chunkServer = new ChunkServer();
         try {
             chunkServer.start();
             chunkServer.blockUntilShutdown();

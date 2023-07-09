@@ -15,21 +15,21 @@ public class Server {
 
     @Test
     public void start1() throws IOException, InterruptedException, RemotingException, TimeoutException {
-        ChunkServer chunkServer = new ChunkServer(10051);
+        ChunkServer chunkServer = new ChunkServer();
         chunkServer.start();
         chunkServer.blockUntilShutdown();
     }
 
     @Test
     public void start2() throws IOException, InterruptedException, RemotingException, TimeoutException {
-        ChunkServer chunkServer = new ChunkServer(10052);
+        ChunkServer chunkServer = new ChunkServer();
         chunkServer.start();
         chunkServer.blockUntilShutdown();
     }
 
     @Test
     public void start3() throws IOException, InterruptedException, RemotingException, TimeoutException {
-        ChunkServer chunkServer = new ChunkServer(10053);
+        ChunkServer chunkServer = new ChunkServer();
         chunkServer.start();
         chunkServer.blockUntilShutdown();
     }

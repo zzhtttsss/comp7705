@@ -6,6 +6,7 @@ import com.alipay.sofa.jraft.entity.PeerId;
 import com.alipay.sofa.jraft.error.RemotingException;
 import com.alipay.sofa.jraft.option.CliOptions;
 import com.alipay.sofa.jraft.rpc.impl.cli.CliClientServiceImpl;
+import comp7705.chunkserver.ChunkserverConfig;
 import comp7705.chunkserver.entity.*;
 import comp7705.chunkserver.handler.FileHandler;
 import comp7705.chunkserver.interceptor.MetadataInterceptor;
@@ -41,26 +42,19 @@ public class ChunkServer {
 
     private Server server;
     private InetAddress address;
-    private int port;
     private static final int TIME_OUT = 50000;
 
     private DataNode dataNode;
 
+    private final ChunkserverConfig config = ChunkserverConfig.CHUNKSERVER_CONFIG;
 
 
-    private String groupId = "master";
-    private String masterAddress = "localhost";
-    private int masterLeaderPort = 8081;
+
     private final CliClientServiceImpl cliClientService;
 
     private final FileService fileService;
 
     private final ScheduledExecutorService scheduledExecutorService;
-
-    private ManagedChannel channel;
-    private MasterServiceGrpc.MasterServiceFutureStub masterServiceFutureStub;
-    private String masterHost;
-    private int masterPort;
 
     private final Map<PendingChunk, SendResult> successSendResult;
     private final Map<PendingChunk, SendResult> failSendResult;
@@ -70,7 +64,6 @@ public class ChunkServer {
 
     private final BlockingQueue<PendingChunk> removedBlockingQueue;
 
-    private Registry registry;
 
     private final HeartbeatService heartbeatService;
 
@@ -78,63 +71,42 @@ public class ChunkServer {
 
     private final ClearChunkService clearChunkService;
 
-    public ChunkServer(int port) {
+    public ChunkServer() {
         try {
             this.address = InetAddress.getLocalHost();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        this.port = port;
-        System.setProperty("pathPrefix", this.address.getHostAddress() + "_" + this.port);
-        System.setProperty("serverAddr", this.address.getHostAddress() + ":" + this.port);
+        System.setProperty("pathPrefix", this.address.getHostAddress() + "_" + config.getChunkserverPort());
+        System.setProperty("serverAddr", this.address.getHostAddress() + ":" + config.getChunkserverPort());
 
         // lock when read and write
         // <key, value> = <chunkId, SendType>
         this.successSendResult = new ConcurrentHashMap<>();
         this.failSendResult = new ConcurrentHashMap<>();
 
-//        this.registry = new ZkRegistry();
-//        while (true) {
-//            URL url = registry.lookup("master");
-//            if (url != null) {
-//                this.masterHost = url.getIp();
-//                this.masterPort = url.getPort();
-//                break;
-//            }
-//        }
-
-        final String groupId = "master";
-        final String confStr = "127.0.0.1:8081";
         MasterGrpcHelper.initGRpc();
 
         final Configuration conf = new Configuration();
-        if (!conf.parse(confStr)) {
-            throw new IllegalArgumentException("Fail to parse conf:" + confStr);
+        if (!conf.parse(config.getMasterGroupAddressesString())) {
+            throw new IllegalArgumentException("Fail to parse conf:" + config.getMasterGroupAddressesString());
         }
 
-        RouteTable.getInstance().updateConfiguration(groupId, conf);
+        RouteTable.getInstance().updateConfiguration(config.getMasterGroupId(), config.getMasterGroupAddressesString());
 
         cliClientService = new CliClientServiceImpl();
         cliClientService.init(new CliOptions());
 
         try {
-            if (!RouteTable.getInstance().refreshLeader(cliClientService, groupId, 1000).isOk()) {
+            if (!RouteTable.getInstance().refreshLeader(cliClientService, config.getMasterGroupId(), 1000).isOk()) {
                 throw new IllegalStateException("Refresh leader failed");
             }
         } catch (InterruptedException | TimeoutException e) {
             throw new RuntimeException(e);
         }
 
-//        this.masterHost = "127.0.0.1";
-//        this.masterPort = 20051;
-
         this.fileService = new FileServiceImpl();
         this.scheduledExecutorService = Executors.newScheduledThreadPool(1);
-
-//        this.channel = ManagedChannelBuilder.forAddress(this.masterHost, this.masterPort)
-//                .usePlaintext()
-//                .build();
-//        this.masterServiceFutureStub = MasterServiceGrpc.newFutureStub(this.channel);
 
         this.removedBlockingQueue = new LinkedBlockingQueue<>();
 
@@ -147,12 +119,12 @@ public class ChunkServer {
     }
 
     public void start() throws IOException, InterruptedException, TimeoutException, RemotingException {
-        server = ServerBuilder.forPort(port)
+        server = ServerBuilder.forPort(config.getChunkserverPort())
                 .intercept(new MetadataInterceptor())
                 .addService(new FileHandler(this, this.fileService))
                 .build()
                 .start();
-        System.out.println("Server started, listening on " + port);
+        log.info("Server started, listening on {}", config.getChunkserverPort());
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
@@ -199,7 +171,7 @@ public class ChunkServer {
         DNRegisterRequest request = requestBuilder
                 .setFullCapacity(fullCapacity)
                 .setUsedCapacity(usedCapacity)
-                .setPort(this.port)
+                .setPort(config.getChunkserverPort())
                 .build();
 
         PeerId leader = refreshAndGetLeader();
@@ -285,10 +257,10 @@ public class ChunkServer {
 
 
     public PeerId refreshAndGetLeader() throws InterruptedException, TimeoutException {
-        if (!RouteTable.getInstance().refreshLeader(cliClientService, groupId, 5000).isOk()) {
+        if (!RouteTable.getInstance().refreshLeader(cliClientService, config.getMasterGroupId(), 5000).isOk()) {
             throw new IllegalStateException("Refresh leader failed");
         }
-        return RouteTable.getInstance().selectLeader(groupId);
+        return RouteTable.getInstance().selectLeader(config.getMasterGroupId());
 
     }
 }

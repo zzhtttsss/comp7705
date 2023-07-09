@@ -22,27 +22,27 @@ public class MasterStartup {
 
     private static MasterServer masterServer;
 
+    private static final MasterConfig config = MasterConfig.MASTER_CONFIG;
+
     public static void start() {
         // read config first
         MASTER.init();
-        // The port on which the server should run
-        int port = MASTER_CONFIG.getMasterGrpcPort();
     }
 
 
     public static void main(String[] args) throws IOException, InterruptedException {
         start();
-        if (args.length != 4) {
-            System.out
-                    .println("Usage : java com.alipay.sofa.jraft.example.counter.CounterServer {dataPath} {groupId} {serverId} {initConf}");
-            System.out
-                    .println("Example: java com.alipay.sofa.jraft.example.counter.CounterServer /tmp/server1 counter 127.0.0.1:8081 127.0.0.1:8081,127.0.0.1:8082,127.0.0.1:8083");
-            System.exit(1);
-        }
-        final String dataPath = args[0];
-        final String groupId = args[1];
-        final String serverIdStr = args[2];
-        final String initConfStr = args[3];
+//        if (args.length != 4) {
+//            System.out
+//                    .println("Usage : java com.alipay.sofa.jraft.example.counter.CounterServer {dataPath} {groupId} {serverId} {initConf}");
+//            System.out
+//                    .println("Example: java com.alipay.sofa.jraft.example.counter.CounterServer /tmp/server1 counter 127.0.0.1:8081 127.0.0.1:8081,127.0.0.1:8082,127.0.0.1:8083");
+//            System.exit(1);
+//        }
+////        final String dataPath = args[0];
+////        final String groupId = args[1];
+////        final String serverIdStr = args[2];
+////        final String initConfStr = args[3];
 
         final NodeOptions nodeOptions = new NodeOptions();
         // for test, modify some params
@@ -54,18 +54,18 @@ public class MasterStartup {
         nodeOptions.setSnapshotIntervalSecs(30);
         // parse server address
         final PeerId serverId = new PeerId();
-        if (!serverId.parse(serverIdStr)) {
-            throw new IllegalArgumentException("Fail to parse serverId:" + serverIdStr);
+        if (!serverId.parse(config.getMasterServerId())) {
+            throw new IllegalArgumentException("Fail to parse serverId:" + config.getMasterServerId());
         }
         final Configuration initConf = new Configuration();
-        if (!initConf.parse(initConfStr)) {
-            throw new IllegalArgumentException("Fail to parse initConf:" + initConfStr);
+        if (!initConf.parse(config.getMasterGroupAddressesString())) {
+            throw new IllegalArgumentException("Fail to parse initConf:" + config.getMasterGroupAddressesString());
         }
         // set cluster configuration
         nodeOptions.setInitialConf(initConf);
 
         // start raft server
-        masterServer = new MasterServer(dataPath, groupId, serverId, nodeOptions);
+        masterServer = new MasterServer(config.getMasterDataPath(), config.getMasterGroupId(), serverId, nodeOptions);
         HeartbeatService heartbeatService = new HeartbeatService(masterServer);
         MASTER.setMasterServer(masterServer);
         MASTER.setHeartbeatService(heartbeatService);

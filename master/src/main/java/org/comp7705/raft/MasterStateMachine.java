@@ -36,8 +36,6 @@ public class MasterStateMachine  extends StateMachineAdapter {
             .threadFactory(
                     new NamedThreadFactory("Master-Raft-Executor-", true)).build();
 
-
-
     /**
      * Counter value
      */

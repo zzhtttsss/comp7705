@@ -8,6 +8,7 @@ import com.alipay.sofa.jraft.option.CliOptions;
 import com.alipay.sofa.jraft.rpc.impl.cli.CliClientServiceImpl;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.comp7705.client.ClientConfig;
 import org.comp7705.grpc.MasterGrpcHelper;
 import org.comp7705.protocol.definition.*;
 
@@ -17,33 +18,28 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 @Data
 public class MasterClient {
-    private String groupId = "master";
-    private String host = "localhost";
-    private int port = 8081;
+    private ClientConfig config = ClientConfig.CLIENT_CONFIG;
     private CliClientServiceImpl cliClientService;
 
-    private static final int TIME_OUT = 50000;
+    private static final int TIME_OUT = 5000;
 
     public static final MasterClient masterClient = new MasterClient();
 
     private MasterClient() {
-        final String groupId = "master";
-//        final String confStr = "172.18.0.12:8081";
-        final String confStr = "127.0.0.1:8081";
         MasterGrpcHelper.initGRpc();
 
         final Configuration conf = new Configuration();
-        if (!conf.parse(confStr)) {
-            throw new IllegalArgumentException("Fail to parse conf:" + confStr);
+        if (!conf.parse(config.getMasterGroupAddressesString())) {
+            throw new IllegalArgumentException("Fail to parse conf:" + config.getMasterGroupAddressesString());
         }
 
-        RouteTable.getInstance().updateConfiguration(groupId, conf);
+        RouteTable.getInstance().updateConfiguration(config.getMasterGroupId(), conf);
 
         cliClientService = new CliClientServiceImpl();
         cliClientService.init(new CliOptions());
 
         try {
-            if (!RouteTable.getInstance().refreshLeader(cliClientService, groupId, 1000).isOk()) {
+            if (!RouteTable.getInstance().refreshLeader(cliClientService, config.getMasterGroupId(), 5000).isOk()) {
                 throw new IllegalStateException("Refresh leader failed");
             }
         } catch (InterruptedException | TimeoutException e) {
@@ -163,10 +159,10 @@ public class MasterClient {
     }
 
     public PeerId refreshAndGetLeader() throws InterruptedException, TimeoutException {
-        if (!RouteTable.getInstance().refreshLeader(cliClientService, groupId, 5000).isOk()) {
+        if (!RouteTable.getInstance().refreshLeader(cliClientService, config.getMasterGroupId(), 5000).isOk()) {
             throw new IllegalStateException("Refresh leader failed");
         }
-        return RouteTable.getInstance().selectLeader(groupId);
+        return RouteTable.getInstance().selectLeader(config.getMasterGroupId());
 
     }
 
