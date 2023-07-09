@@ -120,11 +120,13 @@ public class ChunkClient {
 
         CountDownLatch countDownLatch = new CountDownLatch(1);
         final Boolean[] isWritten = {true};
-
+        final int[] index = {0};
         StreamObserver<Piece> response = new StreamObserver<Piece>() {
             @Override
             public void onNext(Piece piece) {
                 try {
+                    log.info("get a piece {}", index[0]);
+                    index[0]++;
                     bout.write(piece.getPiece().toByteArray());
                 } catch (IOException e) {
                     log.error(e.toString());
@@ -137,11 +139,12 @@ public class ChunkClient {
             public void onError(Throwable throwable) {
                 isWritten[0] = false;
                 countDownLatch.countDown();
+                log.error("failed to get file", throwable);
             }
 
             @Override
             public void onCompleted() {
-                isWritten[0] = false;
+//                isWritten[0] = false;
                 countDownLatch.countDown();
             }
         };

@@ -40,13 +40,15 @@ public class FileHandler extends ChunkserverServiceGrpc.ChunkserverServiceImplBa
     public void setupStream2DataNode(SetupStream2DataNodeRequest args, StreamObserver<Piece> response) {
 
         String chunkId = args.getChunkId();
-        byte[] chunkContent = new byte[0];
+        byte[] chunkContent;
         try {
             chunkContent = fileService.readChunk(chunkId);
             int len = chunkContent.length;
             int ptr = 0;
             byte[] pieceByte;
+            int index = 0;
             while (ptr + PieceSize < len) {
+                log.info("Sending piece {} of chunk {}", index++, chunkId);
                 pieceByte = Arrays.copyOfRange(chunkContent, ptr, ptr + PieceSize);
                 Piece piece = Piece.newBuilder()
                         .setPiece(ByteString.copyFrom(pieceByte))

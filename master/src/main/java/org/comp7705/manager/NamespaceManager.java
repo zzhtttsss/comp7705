@@ -45,11 +45,18 @@ public class NamespaceManager {
 
     public FileNode getFileNode(String path) {
         FileNode currentNode = root;
-        path = path.trim();
-        String[] fileNames = path.split("/");
         if (path.equals(ROOT_PATH)) {
             return currentNode;
         }
+//        path = path.trim();
+        if (path.length() > 0 && path.charAt(0) == '/') {
+            path = path.substring(1);
+        }
+        if (path.length() > 0 && path.charAt(path.length() - 1) == '/') {
+            path = path.substring(0, path.length() - 1);
+        }
+        String[] fileNames = path.split("/");
+
         for (String name : fileNames) {
             FileNode nextNode = currentNode.getChildNodes().get(name);
             if (nextNode == null) {

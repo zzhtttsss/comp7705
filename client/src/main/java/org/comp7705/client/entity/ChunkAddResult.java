@@ -11,20 +11,26 @@ import java.util.List;
 
 
 @Data
-@AllArgsConstructor
 public class ChunkAddResult {
     public String chunkId;
     public List<String> successNodes;
     public List<String> failNodes;
 
-    public static ChunkAddResult fromTransferChunkResponse(TransferChunkResponse response, List<String> dataNodeAdds, String chunkId) {
-        if (response == null) {
-            return new ChunkAddResult(chunkId, new ArrayList<>(), dataNodeAdds);
-        }
-        List<String> failNodes = ProtobufUtil.byteStrList2StrList(response.getFailAddsList().asByteStringList());
-        ArrayList<String> successNodes = new ArrayList<>(dataNodeAdds);
-        successNodes.removeAll(failNodes);
-        return new ChunkAddResult(response.getChunkId(), successNodes, failNodes);
+//    public static ChunkAddResult fromTransferChunkResponse(List<String> failNodes, List<String> dataNodeIds,
+//                                                           String chunkId) {
+////        if (response == null) {
+////            return new ChunkAddResult(chunkId, new ArrayList<>(), dataNodeAdds);
+////        }
+//        ArrayList<String> successNodes = new ArrayList<>(dataNodeIds);
+//        successNodes.removeAll(failNodes);
+//        return new ChunkAddResult(chunkId, successNodes, failNodes);
+//    }
+
+
+    public ChunkAddResult(String chunkId, List<String> successNodes, List<String> failNodes) {
+        this.chunkId = chunkId;
+        this.successNodes = successNodes;
+        this.failNodes = failNodes;
     }
 
     public ChunkInfo4Add toChunkInfo4Add(){

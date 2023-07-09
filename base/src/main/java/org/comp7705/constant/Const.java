@@ -24,7 +24,7 @@ public class Const {
     public final static int MB         = 1024 * KB;
     public final static int ChunkMBNum = 64;
     public final static int PieceMBNum = 1;
-    public final static int PieceSize = 5;//PieceMBNum * MB;
+    public final static int PieceSize = PieceMBNum * MB;//PieceMBNum * MB;
     public final static int ChunkSize  = ChunkMBNum * MB;
 
     public final static int CheckSumSize = 10;

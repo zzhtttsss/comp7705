@@ -20,9 +20,9 @@ public interface FileService {
 
     public byte[] readChunk(String chunkId) throws Exception;
 
-    public void deleteChunk(String chunkId) throws Exception;
+    public void batchDeleteChunk(String chunkId) throws Exception;
 
-    public void deleteChunk(List<String> chunkIds) throws Exception;
+    public void batchDeleteChunk(List<String> chunkIds) throws Exception;
 
     public int getChunkSize(String chunkId);
 

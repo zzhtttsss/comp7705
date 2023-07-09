@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.comp7705.protocol.definition.PieceOfChunk;
 
 import java.io.*;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -85,28 +87,18 @@ public class FileServiceImpl implements FileService {
 
         File newFile = new File(STORAGE_PATH + File.separator + newName);
         file.renameTo(newFile);
-//        newFile.createNewFile();
-//        FileInputStream fileInputStream = new FileInputStream(file);
-//        FileOutputStream fileOutputStream = new FileOutputStream(newFile);
-//        int by;
-//        while ((by=fileInputStream.read())!=-1){
-//            fileOutputStream.write(by);
-//        }
-//        fileInputStream.close();
-//        fileOutputStream.close();
-//        if (!file.delete()) {
-//            log.warn(file.getName() + " deletion fails");
-//        }
     }
 
     @Override
     public byte[] readChunk(String chunkId) throws Exception {
-
+        log.info("Reading chunkId: " + chunkId);
         RandomAccessFile chunk = new RandomAccessFile(STORAGE_PATH + File.separator + chunkId + "_complete", "r");
-        byte[] output = new byte[(int) chunk.length()];
-        chunk.read(output);
+        FileChannel channel = chunk.getChannel();
+        MappedByteBuffer mappedByteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size());
+        byte[] res = new byte[(int) channel.size()];
+        mappedByteBuffer.get(res);
         chunk.close();
-        return output;
+        return res;
     }
 
     @Deprecated
@@ -165,27 +157,32 @@ public class FileServiceImpl implements FileService {
         log.info("Reading chunkId: " + chunkId);
 
         byte[] res;
-        File file;
-        file = new File(STORAGE_PATH + chunkId);
-        char[] chunkContent = new char[(int) file.length()];
-        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(STORAGE_PATH + chunkId))) {
-            bufferedReader.read(chunkContent);
-        }
-        file = new File(CHECKSUM_PATH + chunkId);
-        char[] checksumContent = new char[(int) file.length()];
-        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(CHECKSUM_PATH + chunkId))) {
-            bufferedReader.read(checksumContent);
-        }
-
-        if (!Util.checksum(chunkContent, checksumContent)) {
-            throw new ChecksumException();
-        }
-
-        return String.valueOf(chunkContent).getBytes();
+        RandomAccessFile raFile = new RandomAccessFile(STORAGE_PATH + chunkId, "r");
+        FileChannel channel = raFile.getChannel();
+        MappedByteBuffer mappedByteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size());
+        res = new byte[(int) channel.size()];
+        mappedByteBuffer.get(res);
+        raFile.close();
+        return res;
+//        char[] chunkContent = new char[(int) file.length()];
+//        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(STORAGE_PATH + chunkId))) {
+//            bufferedReader.read(chunkContent);
+//        }
+//        file = new File(CHECKSUM_PATH + chunkId);
+//        char[] checksumContent = new char[(int) file.length()];
+//        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(CHECKSUM_PATH + chunkId))) {
+//            bufferedReader.read(checksumContent);
+//        }
+//
+//        if (!Util.checksum(chunkContent, checksumContent)) {
+//            throw new ChecksumException();
+//        }
+//
+//        return String.valueOf(chunkContent).getBytes();
     }
 
     @Override
-    public void deleteChunk(String chunkId) throws Exception {
+    public void batchDeleteChunk(String chunkId) throws Exception {
         File file;
 
         file = new File(STORAGE_PATH + File.separator + chunkId + "_complete");
@@ -205,11 +202,11 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void deleteChunk(List<String> chunkIds) throws Exception {
+    public void batchDeleteChunk(List<String> chunkIds) throws Exception {
         List<Exception> exceptions = new ArrayList<>();
         for (String chunkId : chunkIds) {
             try {
-                deleteChunk(chunkId);
+                batchDeleteChunk(chunkId);
             } catch (Exception e) {
                 exceptions.add(e);
             }

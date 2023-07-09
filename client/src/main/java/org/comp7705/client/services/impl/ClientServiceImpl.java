@@ -106,8 +106,20 @@ public class ClientServiceImpl implements ClientService {
                 List<String> checkSums = StringUtil.getInstance().getCheckSums(buffer, Const.MB);
                 List<TransferChunkResponse> responses = chunkClient.addFile(chunkId, dataNodeAdds,
                         chunkSize, checkSums, buffer);
-                resultList.add(ChunkAddResult.fromTransferChunkResponse(responses.get(responses.size() - 1),
-                        dataNodeAdds, chunkId));
+                List<String> failNodes = ProtobufUtil.byteStrList2StrList(responses.get(responses.size() - 1)
+                        .getFailAddsList().asByteStringList());
+                List<String> failNodeIds = new ArrayList<>();
+                for (String failNode : failNodes) {
+                    for (String address : dataNodeAdds) {
+                        if (address.equals(failNode)) {
+                            failNodeIds.add(dataNodeIds.get(dataNodeAdds.indexOf(address)));
+                        }
+                    }
+                }
+                ArrayList<String> successNodeIds = new ArrayList<>(dataNodeIds);
+                successNodeIds.removeAll(failNodeIds);
+                ChunkAddResult chunkAddResult = new ChunkAddResult(chunkId, successNodeIds, failNodeIds);
+                resultList.add(chunkAddResult);
                 bar.step();
                 index += Const.ChunkSize;
             }
@@ -166,23 +178,25 @@ public class ClientServiceImpl implements ClientService {
                 } catch (InterruptedException e) {
                     return;
                 }
+                log.info("data nodes response: {}", dataNodesResponse);
                 if (dataNodesResponse == null) { return; }
                 String chunkId = getInfo.getFileNodeId() + "_" + i;
                 List<String> nodeAddresses = ProtobufUtil.byteStrList2StrList(dataNodesResponse
                         .getDataNodeAddrsList().asByteStringList());
                 boolean isChunkSuccess = false;
                 for (String nodeAddress: nodeAddresses) {
+                    log.info("node address: {}", nodeAddress);
                     if (chunkClient.getFile(chunkId, nodeAddress, bout)) {
                         isChunkSuccess = true;
                         break;
                     }
                 }
                 if (!isChunkSuccess) {
-                    break;
+                    throw new IOException("Fail to get chunk " + chunkId);
                 }
             }
         }  catch (IOException e) {
-            log.error(e.toString());
+            log.error("Fail to write {}", des, e);
             System.out.printf("\033[1;31mFailed to write %s because of %s\033[0m\n", des, e);
         }
 
