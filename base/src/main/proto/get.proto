@@ -19,7 +19,6 @@ message CheckArgs4GetRequest {
 message CheckArgs4GetResponse {
   string fileNodeId = 1;
   int32 chunkNum = 2;
-  string operationId = 3;
   int64 fileSize=4;
 }
 

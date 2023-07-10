@@ -9,6 +9,7 @@ message DNRegisterRequest {
   repeated string ChunkIds = 1;
   int64 FullCapacity = 2;
   int64 UsedCapacity = 3;
+  int32 Port = 4;
 }
 
 message DNRegisterResponse {

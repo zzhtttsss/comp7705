@@ -8,11 +8,11 @@ option java_string_check_utf8 = true;
 // CheckAndMkDirArgs
 // path: target path to make directory
 // dirName: name of the directory to be added
-message MkDirRequest {
+message MkdirRequest {
   string path = 1;
   string dirName = 2;
 }
 
-message MkDirResponse {
+message MkdirResponse {
 
 }
