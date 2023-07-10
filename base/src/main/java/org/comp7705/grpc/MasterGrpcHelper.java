@@ -2,6 +2,8 @@ package org.comp7705.grpc;
 
 import com.alipay.sofa.jraft.rpc.RpcServer;
 
+import com.alipay.sofa.jraft.rpc.impl.GrpcRaftRpcFactory;
+import com.alipay.sofa.jraft.rpc.impl.MarshallerRegistry;
 import com.alipay.sofa.jraft.util.RpcFactoryHelper;
 import com.google.protobuf.Message;
 import org.comp7705.protocol.definition.*;
@@ -30,6 +32,7 @@ public class MasterGrpcHelper {
 
         if ("com.alipay.sofa.jraft.rpc.impl.GrpcRaftRpcFactory".equals(RpcFactoryHelper.rpcFactory().getClass()
                 .getName())) {
+            logger.info("aaaaaa");
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(CheckArgs4AddRequest.class.getName(),
                     CheckArgs4AddRequest.getDefaultInstance());
             RpcFactoryHelper.rpcFactory().registerProtobufSerializer(CheckArgs4AddResponse.class.getName(),

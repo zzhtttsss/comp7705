@@ -76,7 +76,7 @@ public class DataNodeManager {
 
     private void adjust4batch(DataNode dataNode) {
         // TODO
-        if (dataNodeHeap.size() < 1) {
+        if (dataNodeHeap.size() < 3) {
             dataNodeHeap.add(dataNode);
             dataNode.addTempChunkSize();
         }
