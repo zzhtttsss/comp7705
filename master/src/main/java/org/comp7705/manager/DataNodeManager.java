@@ -170,4 +170,15 @@ public class DataNodeManager {
         return avgUsage - currentUsage > MasterConfig.MASTER_CONFIG.getExpandThreshold();
     }
 
+    public List<String> getAliveDataNodeIds() {
+        ArrayList<String> ids = new ArrayList<>();
+        for (Map.Entry<String, DataNode> entry : dataNodeMap.entrySet()) {
+            if (entry.getValue().getStatus() == DataNodeStatus.ALIVE) {
+                ids.add(entry.getKey());
+            }
+        }
+        return ids;
+    }
+
+
 }

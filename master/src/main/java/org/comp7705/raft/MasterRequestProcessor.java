@@ -8,6 +8,7 @@ import lombok.Getter;
 import org.comp7705.Master;
 import org.comp7705.MasterServer;
 import org.comp7705.common.AddStage;
+import org.comp7705.common.DataNodeStatus;
 import org.comp7705.common.GetStage;
 import org.comp7705.common.RequestType;
 import org.comp7705.entity.ChunkTaskResult;
@@ -24,6 +25,8 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.comp7705.metadata.DataNode.calUsage;
 
 public class MasterRequestProcessor<T> implements RpcProcessor<T> {
 
@@ -46,7 +49,7 @@ public class MasterRequestProcessor<T> implements RpcProcessor<T> {
     @Override
     public void handleRequest(RpcContext rpcCtx, T request) {
         Requires.requireNonNull(request, "request");
-        logger.info("Receive request {} from {}", request, rpcCtx.getRemoteAddress());
+        logger.debug("Receive request {} from {}", request, rpcCtx.getRemoteAddress());
         Operation operation;
         Task task = new Task();
         RequestProcessClosure closure;
@@ -120,11 +123,16 @@ public class MasterRequestProcessor<T> implements RpcProcessor<T> {
                 break;
             case REGISTER:
                 DNRegisterRequest registerRequest = (DNRegisterRequest) request;
-                operation = new RegisterOperation(UUID.randomUUID().toString(), UUID.randomUUID().toString(),
-                        rpcCtx.getRemoteAddress().substring(1).split(":")[0] + ":" + registerRequest.getPort(),
-                        new ArrayList<>(registerRequest.getChunkIdsList()), registerRequest.getFullCapacity(),
-                        registerRequest.getUsedCapacity(), master.getDataNodeManager()
-                        .isNeed2Expand(registerRequest.getUsedCapacity(), registerRequest.getFullCapacity()));
+                String dataNodeId = UUID.randomUUID().toString();
+                List<String> chunkIds = new ArrayList<>(registerRequest.getChunkIdsList());
+                ExpandOperation expandOperation = doExpand(dataNodeId, chunkIds, registerRequest.getUsedCapacity(),
+                        registerRequest.getFullCapacity());
+                operation = new RegisterOperation(UUID.randomUUID().toString(), dataNodeId,
+                        rpcCtx.getRemoteAddress().substring(1).split(":")[0] + ":" +
+                                registerRequest.getPort(), chunkIds,
+                        registerRequest.getFullCapacity(), registerRequest.getUsedCapacity(),
+                        master.getDataNodeManager().isNeed2Expand(registerRequest.getUsedCapacity(),
+                                registerRequest.getFullCapacity()), expandOperation);
                 logger.info("Register operation: {}", operation);
                 break;
             default:
@@ -162,5 +170,43 @@ public class MasterRequestProcessor<T> implements RpcProcessor<T> {
                     chunkInfo.getSendType()));
         }
         return chunkSendInfos;
+    }
+
+    private ExpandOperation doExpand(String dataNodeId, List<String> chunkIds, long fullCapacity, long usedCapacity) {
+        logger.info("Start to expand with dataNode {}", dataNodeId);
+        int currentUsage = calUsage(usedCapacity, fullCapacity, 0);
+        int pendingCount = (int) ((master.getDataNodeManager().calAvgUsage() - currentUsage) * fullCapacity
+                / (100L * 64 * 1024 * 1024) + 1);
+        Set<String> selfChunks = new HashSet<>(chunkIds);
+        Set<String> pendingChunks = new HashSet<>();
+        Map<String, List<String>> pendingMap = new HashMap<>();
+        Here:
+        while (true) {
+            boolean notFound = true;
+            for (DataNode node: master.getDataNodeManager().getDataNodeMap().values()) {
+                if (node.getStatus() == DataNodeStatus.ALIVE) {
+                    for (String chunk: node.getChunks()) {
+                        if (!pendingChunks.contains(chunk) && !selfChunks.contains(chunk)) {
+                            notFound = false;
+                            pendingChunks.add(chunk);
+                            if (pendingMap.containsKey(node.getId())) {
+                                pendingMap.get(node.getId()).add(chunk);
+                            } else {
+                                pendingMap.put(node.getId(), new ArrayList<>(Collections.singletonList(chunk)));
+                            }
+                            if (pendingChunks.size() == pendingCount) {
+                                break Here;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            if (notFound) {
+                break;
+            }
+        }
+        return new ExpandOperation(UUID.randomUUID().toString(), pendingMap,
+                dataNodeId, new ArrayList<>(pendingChunks));
     }
 }

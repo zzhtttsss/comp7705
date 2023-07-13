@@ -58,19 +58,6 @@ public class testSofaRaft {
     private static void checkArg4Add(final CliClientServiceImpl cliClientService, final PeerId leader,
                                      CountDownLatch latch) throws RemotingException,
             InterruptedException {
-//        CheckArgs4AddRequest request = CheckArgs4AddRequest.newBuilder().setPath("/").setFileName("aa").setSize(1024 * 1024 * 128).build();
-////        cliClientService.getRpcClient().invokeAsync(leader.getEndpoint(), request, (result, err) -> {
-////            if (err == null) {
-////                latch.countDown();
-////                CheckArgs4AddResponse response = (CheckArgs4AddResponse) result;
-////                System.out.println("incrementAndGet result:" + response.getFileNodeId());
-////            } else {
-////                err.printStackTrace();
-////                latch.countDown();
-////            }
-////        }, 10000);
-//        cliClientService.getRpcClient().invokeSync(leader.getEndpoint(), request, 10000);
-//        latch.countDown();
 
         MkdirRequest request = MkdirRequest.newBuilder()
                 .setPath("/")

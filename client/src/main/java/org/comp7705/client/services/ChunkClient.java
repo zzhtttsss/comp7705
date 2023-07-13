@@ -63,11 +63,14 @@ public class ChunkClient {
 
     public List<TransferChunkResponse> addFile(String chunkId, List<String> nodeAddresses, int chunkSize,
                                                List<String> checkSums, byte[] buffer) {
+        log.info("addFile: chunkId: {}, nodeAddresses: {}, chunkSize: {}, checkSums: {}",
+                chunkId, nodeAddresses, chunkSize, checkSums);
         CountDownLatch countDownLatch = new CountDownLatch(1);
         PieceOfChunk.Builder builder = PieceOfChunk.newBuilder();
         List<PieceOfChunk> pieceOfChunks = new ArrayList<>();
-
+        int index = 0;
         for (int off = 0; off < buffer.length; off += Const.MB) {
+            log.info("addFile: off: {}, time : {}", off, index++);
             if (off + Const.MB > buffer.length) {
                 builder.setPiece(ByteString.copyFrom(buffer, off, buffer.length - off));
             } else {
@@ -83,6 +86,7 @@ public class ChunkClient {
             @Override
             public void onNext(TransferChunkResponse transferChunkResponse) {
                 results.add(transferChunkResponse);
+                log.info("addFile: onNext: {}", transferChunkResponse);
             }
 
             @Override
@@ -97,11 +101,13 @@ public class ChunkClient {
         };
 
         StreamObserver<PieceOfChunk> requestObserver = stub.transferChunk(reply);
-
+        index = 0;
         for (PieceOfChunk pieceOfChunk : pieceOfChunks) {
+            log.info("addFile: index: {}", index++);
             requestObserver.onNext(pieceOfChunk);
         }
         requestObserver.onCompleted();
+        log.info("response: {}", results);
 
         try {
             countDownLatch.await();

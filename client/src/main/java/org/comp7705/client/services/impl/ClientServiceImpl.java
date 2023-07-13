@@ -61,6 +61,7 @@ public class ClientServiceImpl implements ClientService {
         try {
             checkArgs4AddResponse = masterClient.checkArgs4Add(PathUtil.getCurrentName(des),
                     PathUtil.getParentPath(des), file.length());
+            log.info("checkArgs4AddResponse: {}", checkArgs4AddResponse);
         } catch (RemotingException | TimeoutException e) {
             log.error("fail to check args for add.", e);
         } catch (InterruptedException e) {
@@ -74,6 +75,7 @@ public class ClientServiceImpl implements ClientService {
         try {
             getDataNodes4AddResponse = masterClient.getDataNodes4Add(checkArgs4AddResponse.getFileNodeId(),
                     checkArgs4AddResponse.getChunkNum());
+            log.info("getDataNodes4AddResponse: {}", getDataNodes4AddResponse);
         } catch (RemotingException | TimeoutException e) {
             log.error("Fail to get data nodes for add.", e);
         } catch (InterruptedException e) {
@@ -99,13 +101,12 @@ public class ClientServiceImpl implements ClientService {
                         getDataNodes4AddResponse.getDataNodeIds(i).getItemsList().asByteStringList());
                 List<String> dataNodeAdds = ProtobufUtil.byteStrList2StrList(
                         getDataNodes4AddResponse.getDataNodeAdds(i).getItemsList().asByteStringList());
-//                Collections.swap(dataNodeAdds, 0, k);
-//                Collections.swap(dataNodeIds, 0, k);
                 String chunkId = checkArgs4AddResponse.getFileNodeId() + "_" + i;
                 int chunkSize = bin.read(buffer);
                 List<String> checkSums = StringUtil.getInstance().getCheckSums(buffer, Const.MB);
                 List<TransferChunkResponse> responses = chunkClient.addFile(chunkId, dataNodeAdds,
                         chunkSize, checkSums, buffer);
+
                 List<String> failNodes = ProtobufUtil.byteStrList2StrList(responses.get(responses.size() - 1)
                         .getFailAddsList().asByteStringList());
                 List<String> failNodeIds = new ArrayList<>();
@@ -136,7 +137,9 @@ public class ClientServiceImpl implements ClientService {
             }
             Callback4AddResponse callBackInfo = null;
             try {
-                callBackInfo = masterClient.callBack4Add(checkArgs4AddResponse.getFileNodeId(), des, infos, failChunkIds);
+                callBackInfo = masterClient.callBack4Add(checkArgs4AddResponse.getFileNodeId(), des, infos,
+                        failChunkIds);
+                log.info("callBackInfo: {}", callBackInfo);
             } catch (RemotingException | TimeoutException e) {
                 log.error("Fail to callback for add.", e);
             } catch (InterruptedException e) {

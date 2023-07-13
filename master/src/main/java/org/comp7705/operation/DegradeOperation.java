@@ -29,8 +29,6 @@ public class DegradeOperation implements Operation {
 
     @Override
     public Message apply() throws Exception {
-
-
         DataNode dataNode = master.getDataNodeManager().getDataNodeMap().get(dataNodeId);
         if (dataNode == null) {
             return null;

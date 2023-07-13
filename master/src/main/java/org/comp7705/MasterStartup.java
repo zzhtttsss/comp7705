@@ -69,7 +69,6 @@ public class MasterStartup {
         HeartbeatService heartbeatService = new HeartbeatService(masterServer);
         MASTER.setMasterServer(masterServer);
         MASTER.setHeartbeatService(heartbeatService);
-        heartbeatService.run();
         logger.info("Started counter server at port:"
                 + masterServer.getNode().getNodeId().getPeerId().getPort());
         // GrpcServer need block to prevent process exit

@@ -219,16 +219,13 @@ public class ChunkServer {
                 .build();
 
         PeerId leader = refreshAndGetLeader();
-        log.info("Start heartbeat to master ...");
-        log.info(request.toString());
         HeartbeatResponse response = (HeartbeatResponse) cliClientService.getRpcClient()
                 .invokeSync(leader.getEndpoint(), request, TIME_OUT);
 
         try {
-            log.info("Receive heartbeat from master ...");
-            log.info(response.toString());
             for (ChunkInfo chunkInfo : response.getChunkInfosList()) {
-                PendingChunk pendingChunk = new PendingChunk(chunkInfo.getChunkId(), chunkInfo.getSendType(), chunkInfo.getDataNodeId());
+                PendingChunk pendingChunk = new PendingChunk(chunkInfo.getChunkId(), chunkInfo.getSendType(),
+                        chunkInfo.getDataNodeId());
                 pendingChunkBlockingQueue.offer(pendingChunk);
             }
         } catch (Exception e) {

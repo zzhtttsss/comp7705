@@ -45,7 +45,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public void storeChunk(PieceOfChunk pieceOfChunk, String chunkId, int chunkSize, String checksum) throws IOException {
-        log.info("Storing a piece");
+        log.info("Storing a piece, chunkId: {}", chunkId);
         String chunkName = STORAGE_PATH + File.separator + chunkId + "_incomplete";
         String checksumFileName = CHECKSUM_PATH + File.separator + chunkId;
 

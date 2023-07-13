@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class MasterStateMachine  extends StateMachineAdapter {
     private static final Logger logger = LoggerFactory.getLogger(MasterStateMachine.class);
+    private final Master master = Master.MASTER;
 
     private static final ThreadPoolExecutor executor   = ThreadPoolUtil
             .newBuilder()
@@ -36,10 +37,6 @@ public class MasterStateMachine  extends StateMachineAdapter {
             .threadFactory(
                     new NamedThreadFactory("Master-Raft-Executor-", true)).build();
 
-    /**
-     * Counter value
-     */
-    private final Master master      = Master.MASTER;
     /**
      * Leader term
      */
@@ -130,6 +127,8 @@ public class MasterStateMachine  extends StateMachineAdapter {
     public void onLeaderStart(final long term) {
         this.leaderTerm.set(term);
         super.onLeaderStart(term);
+        master.getHeartbeatService().shutdown();
+
 
     }
 
@@ -137,6 +136,7 @@ public class MasterStateMachine  extends StateMachineAdapter {
     public void onLeaderStop(final Status status) {
         this.leaderTerm.set(-1);
         super.onLeaderStop(status);
+        master.getHeartbeatService().start();
     }
 
     private Operation deserializeOperation(final ByteBuffer data) {

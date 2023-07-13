@@ -105,6 +105,36 @@ public class ChunkManager {
     }
 
 
+//    // getPendingChunks get a batch of Chunk's id from the pendingChunkQueue. The
+//// batch size is the minimum of the current len of the pendingChunkQueue and
+//// the maximum size.
+//    func getPendingChunks() []string {
+//        var (
+//                maxCount  = viper.GetInt(common.ChunkDeadChunkCopyThreshold)
+//                copyCount int
+//	)
+//        if pendingChunkQueue.Len() > maxCount {
+//            copyCount = maxCount
+//        } else {
+//            copyCount = pendingChunkQueue.Len()
+//        }
+//        batchTs := pendingChunkQueue.BatchTop(copyCount)
+//        batchChunkIds := make([]string, len(batchTs))
+//        for i := 0; i < len(batchTs); i++ {
+//            batchChunkIds[i] = batchTs[i].String()
+//        }
+//        return batchChunkIds
+//    }
+
+    public List<String> getPendingChunks() {
+        List<String> batchChunkIds = new ArrayList<>();
+        int maxCount = 32;
+        int copyCount = Math.min(pendingChunkQueue.size(), maxCount);
+        for (int i = 0; i < copyCount; i++) {
+            batchChunkIds.add(pendingChunkQueue.poll());
+        }
+        return batchChunkIds;
+    }
 
     public void batchAddPendingChunk(Collection<String> chunkIds) {
         this.pendingChunkQueue.addAll(chunkIds);
@@ -117,4 +147,67 @@ public class ChunkManager {
     }
 
 
+    public List<String> batchFilterChunk(List<String> chunkIds) {
+        List<String> result = new ArrayList<>();
+        for (String chunkId : chunkIds) {
+            if (chunkMap.containsKey(chunkId)) {
+                if (chunkMap.get(chunkId).getDataNodes().size() +
+                        chunkMap.get(chunkId).getPendingDataNodes().size() < 3) {
+                    result.add(chunkId);
+                }
+            }
+        }
+        return result;
+    }
+
+    public void batchApplyPlan2Chunk(List<Integer> plan, List<String> chunkIds, List<String> dataNodeIds) {
+        for (int i = 0; i < plan.size(); i++) {
+            chunkMap.get(chunkIds.get(i)).getPendingDataNodes().add(dataNodeIds.get(plan.get(i)));
+        }
+    }
+
+//    // getStoreState gets the state of all DataNode which store target Chunk for all
+//// given Chunk. We need to check both pendingDataNodes and dataNodes of a Chunk.
+//    func getStoreState(chunkIds []string, dataNodeIds []string) [][]bool {
+//        updateChunksLock.RLock()
+//        defer updateChunksLock.RUnlock()
+//        isStore := make([][]bool, len(chunkIds))
+//        for i := range isStore {
+//            isStore[i] = make([]bool, len(dataNodeIds))
+//        }
+//        dnIndexMap := make(map[string]int)
+//        for i, id := range dataNodeIds {
+//            dnIndexMap[id] = i
+//        }
+//        for i, id := range chunkIds {
+//            chunk := chunksMap[id]
+//            dataNodes := chunk.dataNodes.ToSlice()
+//            pendingDataNodes := chunk.pendingDataNodes.ToSlice()
+//            for _, dnId := range dataNodes {
+//                isStore[i][dnIndexMap[dnId.(string)]] = true
+//            }
+//            for _, pdnId := range pendingDataNodes {
+//                isStore[i][dnIndexMap[pdnId.(string)]] = true
+//            }
+//        }
+//        return isStore
+//    }
+
+    public boolean[][] getStoreState(List<String> chunkIds, List<String> dataNodeIds) {
+        boolean[][] isStore = new boolean[chunkIds.size()][dataNodeIds.size()];
+        Map<String, Integer> dnIndexMap = new HashMap<>();
+        for (int i = 0; i < dataNodeIds.size(); i++) {
+            dnIndexMap.put(dataNodeIds.get(i), i);
+        }
+        for (int i = 0; i < chunkIds.size(); i++) {
+            Chunk chunk = chunkMap.get(chunkIds.get(i));
+            for (String dnId : chunk.getDataNodes()) {
+                isStore[i][dnIndexMap.get(dnId)] = true;
+            }
+            for (String pdnId : chunk.getPendingDataNodes()) {
+                isStore[i][dnIndexMap.get(pdnId)] = true;
+            }
+        }
+        return isStore;
+    }
 }

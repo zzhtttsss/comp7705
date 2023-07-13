@@ -1,6 +1,5 @@
 package comp7705.chunkserver.entity;
 
-import com.sun.deploy.util.StringUtils;
 import comp7705.chunkserver.client.GrpcClient;
 import org.comp7705.util.Util;
 import comp7705.chunkserver.exception.ChecksumException;
@@ -81,6 +80,7 @@ public class PieceOfChunkStreamObserver implements StreamObserver<PieceOfChunk> 
         this.chunkSize = metadata.get(InterceptorConst.CHUNK_SIZE);
         this.checksums = metadata.get(InterceptorConst.CHECKSUM);
         this.checksumArray = Arrays.asList(checksums.split(","));
+        log.info("Receive chunkId: {}, addresses: {}, chunkSize: {}", chunkId, addresses, chunkSize);
         this.chunk = new Chunk(chunkId);
 
         this.isStoreSuccess = true;
@@ -92,7 +92,7 @@ public class PieceOfChunkStreamObserver implements StreamObserver<PieceOfChunk> 
         StreamObserver<TransferChunkResponse> nextResponse = new StreamObserver<TransferChunkResponse>() {
             @Override
             public void onNext(TransferChunkResponse transferChunkResponse) {
-                log.info("Receive nextStream response");
+                log.info("Receive nextStream response: {}", transferChunkResponse);
                 failAddresses.addAll(transferChunkResponse.getFailAddsList());
             }
 
@@ -230,8 +230,7 @@ public class PieceOfChunkStreamObserver implements StreamObserver<PieceOfChunk> 
         metadata.put(InterceptorConst.CHUNK_ID, chunkId);
         metadata.put(InterceptorConst.CHUNK_SIZE, chunkSize);
         metadata.put(InterceptorConst.CHECKSUM, checksum);
-        metadata.put(InterceptorConst.ADDRESSES, StringUtils.join(addresses,
-                ","));
+        metadata.put(InterceptorConst.ADDRESSES, String.join(",", addresses));
 
         Channel channel = GrpcClient.getChannel(ip, port);
         channel = ClientInterceptors.intercept(channel, MetadataUtils.newAttachHeadersInterceptor(metadata));
